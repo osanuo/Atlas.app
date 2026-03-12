@@ -16,6 +16,12 @@ struct ProfileView: View {
     @State private var selectedPhoto: PhotosPickerItem? = nil
     @State private var showAddLocationSheet = false
     @State private var isSyncing = false
+    @State private var cameraPosition = MapCameraPosition.camera(
+        MapCamera(
+            centerCoordinate: CLLocationCoordinate2D(latitude: 25, longitude: 10),
+            distance: 20_000_000
+        )
+    )
 
     @Query private var visitedLocations: [VisitedLocation]
 
@@ -289,16 +295,8 @@ struct ProfileView: View {
                 .padding(.leading, 8)
             }
 
-            // Globe map (non-interactive, decorative)
-            Map(
-                position: .constant(
-                    .camera(MapCamera(
-                        centerCoordinate: CLLocationCoordinate2D(latitude: 25, longitude: 10),
-                        distance: 20_000_000
-                    ))
-                ),
-                interactionModes: []
-            ) {
+            // Globe map — interactive, standard Apple Maps style
+            Map(position: $cameraPosition) {
                 ForEach(visitedLocations) { location in
                     Annotation("", coordinate: location.coordinate) {
                         ZStack {
@@ -313,13 +311,13 @@ struct ProfileView: View {
                                         .stroke(Color.white, lineWidth: 2)
                                 )
                         }
-                        .shadow(color: Color.atlasTeal.opacity(0.5), radius: 4, x: 0, y: 0)
+                        .shadow(color: Color.atlasTeal.opacity(0.6), radius: 6, x: 0, y: 0)
                     }
                 }
             }
-            .mapStyle(.imagery(elevation: .realistic))
-            .mapControlVisibility(.hidden)
-            .frame(height: 280)
+            .mapStyle(.standard(elevation: .realistic))
+            .mapControlVisibility(.automatic)
+            .frame(height: 320)
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .shadow(color: .black.opacity(0.18), radius: 14, x: 0, y: 5)
 
