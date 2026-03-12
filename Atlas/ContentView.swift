@@ -9,53 +9,82 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    @State private var selectedTab = 0
+    @State private var showNewTrip = false
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+        ZStack(alignment: .bottom) {
+            TabView(selection: $selectedTab) {
+                TripsView()
+                    .tabItem {
+                        Label("Trips", systemImage: selectedTab == 0 ? "airplane.departure" : "airplane")
                     }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
+                    .tag(0)
+
+                WishlistView()
+                    .tabItem {
+                        Label("Wishlist", systemImage: selectedTab == 1 ? "heart.text.square.fill" : "heart.text.square")
                     }
+                    .tag(1)
+
+                // Placeholder tab for center FAB — empty so no icon appears in tab bar
+                Color.atlasBeige
+                    .tabItem { }
+                    .tag(2)
+
+                CrewView()
+                    .tabItem {
+                        Label("Crew", systemImage: selectedTab == 3 ? "person.2.fill" : "person.2")
+                    }
+                    .tag(3)
+
+                ProfileView()
+                    .tabItem {
+                        Label("Profile", systemImage: selectedTab == 4 ? "person.circle.fill" : "person.circle")
+                    }
+                    .tag(4)
+            }
+            .tint(Color.atlasTeal)
+            .onChange(of: selectedTab) { old, new in
+                if new == 2 {
+                    selectedTab = old
+                    showNewTrip = true
+                    Haptics.medium()
                 }
             }
-        } detail: {
-            Text("Select an item")
-        }
-    }
 
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+            // Custom floating center + button
+            Button {
+                showNewTrip = true
+                Haptics.medium()
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 54, height: 54)
+                    .background(Color.atlasBlack)
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.atlasBeige, lineWidth: 4)
+                    )
             }
+            .offset(y: -26)
+        }
+        .sheet(isPresented: $showNewTrip) {
+            NewTripView()
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+        }
+        .onAppear {
+            configureTabBar()
         }
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .environment(UserProfile.shared)
+        .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self], inMemory: true)
 }
