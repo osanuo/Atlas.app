@@ -70,6 +70,7 @@ struct ItineraryView: View {
 
     @State private var currentDayIndex: Int = 0
     @State private var addingToSlot: TimeSlot? = nil
+    @State private var showCalendar: Bool = false
 
     // Generate trip days array
     private var tripDays: [Date] {
@@ -115,14 +116,24 @@ struct ItineraryView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            // Day navigator
+            // Day navigator (tap center to toggle calendar)
             dayNavigator
+
+            // Collapsible calendar overview
+            if showCalendar {
+                calendarGrid
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .top).combined(with: .opacity),
+                        removal:   .move(edge: .top).combined(with: .opacity)
+                    ))
+            }
 
             // Slot sections
             ForEach(TimeSlot.allCases) { slot in
                 itinerarySection(slot: slot)
             }
         }
+        .animation(.spring(response: 0.35, dampingFraction: 0.85), value: showCalendar)
         .sheet(item: $addingToSlot) { slot in
             ItineraryItemPickerView(trip: trip, day: currentDay, slot: slot)
         }
@@ -146,15 +157,28 @@ struct ItineraryView: View {
             .buttonStyle(.plain)
             .disabled(currentDayIndex == 0)
 
+            // Tap to toggle calendar overview
             VStack(spacing: 2) {
                 Text(dayLabel)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(Color.atlasBlack)
-                Text("Day \(currentDayIndex + 1) of \(totalDays)")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundStyle(Color.atlasBlack.opacity(0.4))
+                HStack(spacing: 3) {
+                    Text("Day \(currentDayIndex + 1) of \(totalDays)")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundStyle(Color.atlasBlack.opacity(0.4))
+                    Image(systemName: showCalendar ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundStyle(Color.atlasBlack.opacity(0.3))
+                }
             }
             .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                    showCalendar.toggle()
+                }
+                Haptics.light()
+            }
 
             Button {
                 if currentDayIndex < tripDays.count - 1 { currentDayIndex += 1; Haptics.light() }
@@ -252,6 +276,157 @@ struct ItineraryView: View {
         item.dayAssigned  = nil
         item.timeAssigned = nil
         Haptics.light()
+    }
+
+    // MARK: - Calendar Grid
+
+    private var calendarGrid: some View {
+        VStack(spacing: 12) {
+            ForEach(calendarMonths, id: \.self) { monthDate in
+                VStack(spacing: 6) {
+                    // Month label
+                    Text(monthLabel(monthDate))
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(Color.atlasBlack.opacity(0.55))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // Weekday header
+                    HStack(spacing: 0) {
+                        let syms = weekdaySymbols
+                        ForEach(0..<7, id: \.self) { i in
+                            Text(syms[i])
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(Color.atlasBlack.opacity(0.28))
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+
+                    // Day rows
+                    let weeks = calendarWeeks(for: monthDate)
+                    ForEach(weeks.indices, id: \.self) { wi in
+                        HStack(spacing: 0) {
+                            ForEach(0..<7, id: \.self) { di in
+                                if let date = weeks[wi][di] {
+                                    calendarDayCell(date)
+                                } else {
+                                    Color.clear
+                                        .frame(maxWidth: .infinity, minHeight: 40)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+    }
+
+    @ViewBuilder
+    private func calendarDayCell(_ date: Date) -> some View {
+        let cal      = Calendar.current
+        let inTrip   = isTripDay(date)
+        let selected = cal.isDate(date, inSameDayAs: currentDay)
+        let today    = cal.isDateInToday(date)
+        let hasDot   = inTrip && hasItemsOnDay(date)
+
+        Button {
+            guard inTrip else { return }
+            if let idx = tripDays.firstIndex(where: { cal.isDate($0, inSameDayAs: date) }) {
+                currentDayIndex = idx
+                Haptics.light()
+            }
+        } label: {
+            VStack(spacing: 3) {
+                Text("\(cal.component(.day, from: date))")
+                    .font(.system(size: 13,
+                                  weight: selected ? .bold : (inTrip ? .medium : .regular)))
+                    .foregroundStyle(
+                        selected  ? .white                          :
+                        today     ? Color.atlasTeal                 :
+                        inTrip    ? Color.atlasBlack                :
+                                    Color.atlasBlack.opacity(0.22)
+                    )
+                    .frame(width: 30, height: 30)
+                    .background(
+                        selected              ? Color.atlasTeal                  :
+                        (today && !selected)  ? Color.atlasTeal.opacity(0.12)    :
+                                                Color.clear
+                    )
+                    .clipShape(Circle())
+
+                Circle()
+                    .fill(hasDot ? Color.atlasTeal : Color.clear)
+                    .frame(width: 4, height: 4)
+            }
+            .frame(maxWidth: .infinity, minHeight: 40)
+        }
+        .buttonStyle(.plain)
+        .disabled(!inTrip)
+    }
+
+    // MARK: - Calendar Helpers
+
+    private var calendarMonths: [Date] {
+        let cal = Calendar.current
+        var months: [Date] = []
+        var comps = cal.dateComponents([.year, .month], from: trip.startDate)
+        let endComps = cal.dateComponents([.year, .month], from: trip.endDate)
+        while true {
+            if let d = cal.date(from: comps) { months.append(d) }
+            guard comps.year != endComps.year || comps.month != endComps.month else { break }
+            comps.month! += 1
+            if comps.month! > 12 { comps.month = 1; comps.year! += 1 }
+        }
+        return months
+    }
+
+    private var weekdaySymbols: [String] {
+        let cal = Calendar.current
+        let syms = cal.veryShortWeekdaySymbols   // index 0 = Sunday
+        let first = cal.firstWeekday - 1         // 0-indexed
+        return Array(syms[first...] + syms[..<first])
+    }
+
+    private func calendarWeeks(for monthDate: Date) -> [[Date?]] {
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.year, .month], from: monthDate)
+        guard let firstOfMonth = cal.date(from: comps),
+              let range = cal.range(of: .day, in: .month, for: firstOfMonth) else { return [] }
+
+        let firstWeekday = cal.component(.weekday, from: firstOfMonth)
+        let leading = (firstWeekday - cal.firstWeekday + 7) % 7
+
+        var days: [Date?] = Array(repeating: nil, count: leading)
+        for day in range {
+            var dc = comps; dc.day = day
+            days.append(cal.date(from: dc))
+        }
+        while days.count % 7 != 0 { days.append(nil) }
+        return stride(from: 0, to: days.count, by: 7).map { Array(days[$0..<$0+7]) }
+    }
+
+    private func monthLabel(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "MMMM yyyy"
+        return f.string(from: date)
+    }
+
+    private func isTripDay(_ date: Date) -> Bool {
+        let cal = Calendar.current
+        let d     = cal.startOfDay(for: date)
+        let start = cal.startOfDay(for: trip.startDate)
+        let end   = cal.startOfDay(for: trip.endDate)
+        return d >= start && d <= end
+    }
+
+    private func hasItemsOnDay(_ date: Date) -> Bool {
+        trip.items.contains {
+            guard let day = $0.dayAssigned else { return false }
+            return Calendar.current.isDate(day, inSameDayAs: date)
+        }
     }
 }
 

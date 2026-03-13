@@ -17,6 +17,7 @@ struct WishlistView: View {
     @State private var showAddDestination = false
     @State private var planningDestination: WishlistDestination? = nil
     @State private var searchText = ""
+    @FocusState private var searchFocused: Bool
 
     private var filtered: [WishlistDestination] {
         if searchText.isEmpty { return destinations }
@@ -94,6 +95,18 @@ struct WishlistView: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.hidden)
         }
+        // After the sheet fully closes, forcibly kill any lingering keyboard.
+        // onDismiss fires too early (mid-animation), so a short delay is needed.
+        .onChange(of: showAddDestination) { _, isShowing in
+            guard !isShowing else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                searchFocused = false
+                UIApplication.shared.sendAction(
+                    #selector(UIResponder.resignFirstResponder),
+                    to: nil, from: nil, for: nil
+                )
+            }
+        }
     }
 
     // MARK: - Header
@@ -134,6 +147,7 @@ struct WishlistView: View {
                 TextField("Search destinations...", text: $searchText)
                     .font(.system(size: 13, weight: .medium, design: .monospaced))
                     .foregroundStyle(Color.atlasBlack)
+                    .focused($searchFocused)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -372,6 +386,9 @@ struct AddWishlistDestinationView: View {
     @State private var country = ""
     @State private var notes = ""
     @State private var selectedPhoto: PhotosPickerItem? = nil
+    @FocusState private var focusedField: FormField?
+
+    private enum FormField { case city, country, notes }
     @State private var selectedImageData: Data? = nil
     @State private var previewImage: Image? = nil
 
@@ -433,6 +450,7 @@ struct AddWishlistDestinationView: View {
                                 .multilineTextAlignment(.center)
                                 .textInputAutocapitalization(.characters)
                                 .autocorrectionDisabled()
+                                .focused($focusedField, equals: .city)
                                 .padding(.horizontal, 20)
                                 .placeholder(when: city.isEmpty) {
                                     Text("CITY NAME")
@@ -455,6 +473,7 @@ struct AddWishlistDestinationView: View {
                         )
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Color.atlasBlack)
+                        .focused($focusedField, equals: .country)
                         .padding(16)
                         .background(Color.white)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -474,6 +493,7 @@ struct AddWishlistDestinationView: View {
                         )
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(Color.atlasBlack)
+                        .focused($focusedField, equals: .notes)
                         .lineLimit(3, reservesSpace: true)
                         .padding(16)
                         .background(Color.white)
@@ -606,6 +626,8 @@ struct AddWishlistDestinationView: View {
 
     private func saveDestination() {
         guard isValid else { return }
+        // Clear SwiftUI focus first (hides keyboard via the framework)
+        focusedField = nil
         let destination = WishlistDestination(
             city: city.trimmingCharacters(in: .whitespaces),
             country: country.trimmingCharacters(in: .whitespaces),

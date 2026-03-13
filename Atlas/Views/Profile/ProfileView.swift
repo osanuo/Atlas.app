@@ -16,13 +16,6 @@ struct ProfileView: View {
     @State private var selectedPhoto: PhotosPickerItem? = nil
     @State private var showAddLocationSheet = false
     @State private var isSyncing = false
-    @State private var cameraPosition = MapCameraPosition.camera(
-        MapCamera(
-            centerCoordinate: CLLocationCoordinate2D(latitude: 25, longitude: 10),
-            distance: 20_000_000
-        )
-    )
-
     @Query private var visitedLocations: [VisitedLocation]
 
     @Query(
@@ -295,31 +288,11 @@ struct ProfileView: View {
                 .padding(.leading, 8)
             }
 
-            // Globe map — interactive, standard Apple Maps style
-            Map(position: $cameraPosition) {
-                ForEach(visitedLocations) { location in
-                    Annotation("", coordinate: location.coordinate) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.atlasTeal.opacity(0.35))
-                                .frame(width: 22, height: 22)
-                            Circle()
-                                .fill(Color.atlasTeal)
-                                .frame(width: 11, height: 11)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white, lineWidth: 2)
-                                )
-                        }
-                        .shadow(color: Color.atlasTeal.opacity(0.6), radius: 6, x: 0, y: 0)
-                    }
-                }
-            }
-            .mapStyle(.standard(elevation: .realistic))
-            .mapControlVisibility(.automatic)
-            .frame(height: 320)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
-            .shadow(color: .black.opacity(0.18), radius: 14, x: 0, y: 5)
+            // Globe map — UIViewRepresentable so we can unlock full globe zoom
+            GlobeMapView(locations: visitedLocations)
+                .frame(height: 320)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .shadow(color: .black.opacity(0.18), radius: 14, x: 0, y: 5)
 
             // Pin count caption
             HStack(spacing: 5) {
@@ -627,6 +600,87 @@ private struct TravelLogRow: View {
 }
 
 // MARK: - Add Visited Location Sheet
+
+// MARK: - Globe UIViewRepresentable
+// SwiftUI Map hard-caps zoom-out at ~8 000 km (continents only).
+// MKMapView lets us raise maxCenterCoordinateDistance to show the full globe.
+
+private struct GlobeMapView: UIViewRepresentable {
+    let locations: [VisitedLocation]
+
+    func makeUIView(context: Context) -> MKMapView {
+        let mapView = MKMapView()
+
+        // MKHybridMapConfiguration is required for globe/space rendering.
+        // .standard tiles render flat even at extreme altitude.
+        mapView.preferredConfiguration = MKHybridMapConfiguration(elevationStyle: .realistic)
+
+        mapView.isScrollEnabled   = true
+        mapView.isZoomEnabled     = true
+        mapView.isRotateEnabled   = true
+        mapView.isPitchEnabled    = false
+        mapView.showsCompass      = true
+        mapView.showsUserLocation = false
+
+        // Remove the zoom-out ceiling entirely so the globe/space view is reachable
+        mapView.cameraZoomRange = MKMapView.CameraZoomRange(
+            minCenterCoordinateDistance: 500,
+            maxCenterCoordinateDistance: CLLocationDistanceMax
+        )
+
+        let camera = MKMapCamera(
+            lookingAtCenter: CLLocationCoordinate2D(latitude: 25, longitude: 10),
+            fromDistance: 20_000_000,
+            pitch: 0,
+            heading: 0
+        )
+        mapView.setCamera(camera, animated: false)
+        mapView.delegate = context.coordinator
+        return mapView
+    }
+
+    func updateUIView(_ mapView: MKMapView, context: Context) {
+        let existing    = mapView.annotations.compactMap { $0 as? VisitedLocationAnnotation }
+        let existingIDs = Set(existing.map(\.locationID))
+        let newIDs      = Set(locations.map(\.id))
+
+        mapView.removeAnnotations(existing.filter { !newIDs.contains($0.locationID) })
+        for loc in locations where !existingIDs.contains(loc.id) {
+            mapView.addAnnotation(VisitedLocationAnnotation(location: loc))
+        }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    class Coordinator: NSObject, MKMapViewDelegate {
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            guard annotation is VisitedLocationAnnotation else { return nil }
+            let id   = "GlobePin"
+            let view = (mapView.dequeueReusableAnnotationView(withIdentifier: id) as? MKMarkerAnnotationView)
+                ?? MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: id)
+            view.annotation         = annotation
+            view.markerTintColor    = UIColor(Color.atlasTeal)
+            view.glyphImage         = nil
+            view.titleVisibility    = .hidden
+            view.subtitleVisibility = .hidden
+            return view
+        }
+    }
+}
+
+private final class VisitedLocationAnnotation: NSObject, MKAnnotation {
+    let locationID: UUID
+    @objc dynamic var coordinate: CLLocationCoordinate2D
+    var title: String?
+
+    init(location: VisitedLocation) {
+        self.locationID = location.id
+        self.coordinate = location.coordinate
+        self.title      = location.name
+    }
+}
+
+// MARK: -
 
 struct AddVisitedLocationSheet: View {
     let onAdd: (String, Double, Double, Date?) -> Void
