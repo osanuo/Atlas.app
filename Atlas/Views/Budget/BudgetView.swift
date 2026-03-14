@@ -464,7 +464,7 @@ struct AddExpenseView: View {
     @FocusState private var amountFocused: Bool
 
     private var isValid: Bool {
-        guard let a = Double(amount) else { return false }
+        guard let a = Double(amount.replacingOccurrences(of: ",", with: ".")) else { return false }
         return a > 0
     }
 
@@ -636,7 +636,7 @@ struct AddExpenseView: View {
     }
 
     private func saveExpense() {
-        guard let a = Double(amount), a > 0 else { return }
+        guard let a = Double(amount.replacingOccurrences(of: ",", with: ".")), a > 0 else { return }
         let expense = Expense(
             amount: a,
             note: note.trimmingCharacters(in: .whitespaces),
