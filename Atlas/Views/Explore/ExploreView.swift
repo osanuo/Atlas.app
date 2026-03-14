@@ -45,11 +45,13 @@ struct ExploreView: View {
         ),
     ]
 
-    private var filtered: [Destination] {
-        if searchText.isEmpty { return destinations }
-        return destinations.filter {
-            $0.city.localizedCaseInsensitiveContains(searchText) ||
-            $0.country.localizedCaseInsensitiveContains(searchText)
+    /// Indices into `destinations` that match the current search text.
+    /// Using indices (not a filtered copy) preserves the `@Binding` needed by ExploreCard.
+    private var filteredIndices: [Int] {
+        if searchText.isEmpty { return Array(destinations.indices) }
+        return destinations.indices.filter {
+            destinations[$0].city.localizedCaseInsensitiveContains(searchText) ||
+            destinations[$0].country.localizedCaseInsensitiveContains(searchText)
         }
     }
 
@@ -62,8 +64,21 @@ struct ExploreView: View {
 
                 // MARK: Cards
                 VStack(spacing: 20) {
-                    ForEach(destinations.indices, id: \.self) { i in
-                        ExploreCard(destination: $destinations[i])
+                    if filteredIndices.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 36))
+                                .foregroundStyle(Color.atlasBlack.opacity(0.2))
+                            Text("No destinations match "\(searchText)"")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color.atlasBlack.opacity(0.4))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 60)
+                    } else {
+                        ForEach(filteredIndices, id: \.self) { i in
+                            ExploreCard(destination: $destinations[i])
+                        }
                     }
                 }
                 .padding(.horizontal, 20)

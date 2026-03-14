@@ -7,10 +7,14 @@
 
 import SwiftUI
 import SwiftData
+import CloudKit
 
 struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showNewTrip = false
+
+    @Environment(\.modelContext) private var modelContext
+    @Query(filter: #Predicate<Trip> { $0.isShared }) private var sharedTrips: [Trip]
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -79,6 +83,16 @@ struct ContentView: View {
         }
         .onAppear {
             configureTabBar()
+        }
+        // When the app foregrounds, pull fresh changes for all shared trips.
+        // This covers: silent push received while in background + manual foreground.
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            guard !sharedTrips.isEmpty else { return }
+            Task {
+                for trip in sharedTrips {
+                    try? await CloudKitSharingManager.shared.fetchChanges(for: trip, in: modelContext)
+                }
+            }
         }
     }
 }

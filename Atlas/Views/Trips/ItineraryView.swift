@@ -222,7 +222,7 @@ struct ItineraryView: View {
             } else {
                 VStack(spacing: 6) {
                     ForEach(slotItems) { item in
-                        ItineraryItemCard(item: item, onRemove: {
+                        ItineraryItemCard(item: item, showAttribution: trip.isShared, onRemove: {
                             removeFromDay(item)
                         })
                     }
@@ -434,6 +434,7 @@ struct ItineraryView: View {
 
 private struct ItineraryItemCard: View {
     let item: TripItem
+    var showAttribution: Bool = false
     var onRemove: () -> Void
     @Environment(UserProfile.self) private var userProfile
 
@@ -464,6 +465,15 @@ private struct ItineraryItemCard: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(item.isCompleted ? Color.atlasBlack.opacity(0.4) : Color.atlasBlack)
                     .strikethrough(item.isCompleted)
+                if showAttribution && !item.addedByName.isEmpty {
+                    Text("by \(item.addedByName)")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.atlasTeal.opacity(0.75))
+                        .clipShape(Capsule())
+                }
             }
 
             Spacer()

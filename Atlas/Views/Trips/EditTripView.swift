@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import CoreLocation
 
 struct EditTripView: View {
     let trip: Trip
@@ -15,17 +16,20 @@ struct EditTripView: View {
 
     @State private var destination: String
     @State private var country: String
+    @State private var destinationFlag: String
     @State private var tripName: String
+    @State private var notes: String
     @State private var startDate: Date
     @State private var endDate: Date
     @State private var travelerCount: Int
     @State private var budget: String
     @State private var selectedColorHex: String
 
-    @State private var showStartPicker = false
-    @State private var showEndPicker   = false
+    @State private var showStartPicker   = false
+    @State private var showEndPicker     = false
     @State private var showDeleteConfirm  = false
     @State private var showArchiveConfirm = false
+    @State private var showFlagPicker    = false
 
     @FocusState private var budgetFocused: Bool
 
@@ -48,13 +52,15 @@ struct EditTripView: View {
 
     init(trip: Trip) {
         self.trip = trip
-        _destination    = State(initialValue: trip.destination)
-        _country        = State(initialValue: trip.country)
-        _tripName       = State(initialValue: trip.name)
-        _startDate      = State(initialValue: trip.startDate)
-        _endDate        = State(initialValue: trip.endDate)
-        _travelerCount  = State(initialValue: trip.travelerCount)
-        _budget         = State(initialValue: trip.budget.map { String(Int($0)) } ?? "")
+        _destination      = State(initialValue: trip.destination)
+        _country          = State(initialValue: trip.country)
+        _destinationFlag  = State(initialValue: trip.destinationFlag)
+        _tripName         = State(initialValue: trip.name)
+        _notes            = State(initialValue: trip.notes)
+        _startDate        = State(initialValue: trip.startDate)
+        _endDate          = State(initialValue: trip.endDate)
+        _travelerCount    = State(initialValue: trip.travelerCount)
+        _budget           = State(initialValue: trip.budget.map { String(Int($0)) } ?? "")
         _selectedColorHex = State(initialValue: trip.cardColorHex)
     }
 
@@ -76,6 +82,9 @@ struct EditTripView: View {
 
                     // Trip name
                     nameField
+
+                    // Notes
+                    notesField
 
                     // Date pickers
                     dateRow
@@ -111,6 +120,14 @@ struct EditTripView: View {
         }
         .sheet(isPresented: $showEndPicker) {
             DatePickerSheet(title: "Return", date: $endDate)
+        }
+        .sheet(isPresented: $showFlagPicker) {
+            FlagPickerSheet(selectedFlag: $destinationFlag)
+        }
+        .onChange(of: country) { _, newCountry in
+            if let detected = flagEmoji(fromCountryName: newCountry) {
+                destinationFlag = detected
+            }
         }
         .alert("Delete Trip", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) { deleteTrip() }
@@ -198,24 +215,41 @@ struct EditTripView: View {
         }
     }
 
-    // MARK: - Country Field
+    // MARK: - Country + Flag Field
 
     private var countryField: some View {
         VStack(spacing: 8) {
-            Text("Country")
+            Text("Country & Flag")
                 .atlasLabel()
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.leading, 4)
 
-            TextField("", text: $country, prompt:
-                Text("e.g. Japan").foregroundStyle(Color.atlasBlack.opacity(0.35))
-            )
-            .font(.system(size: 15, weight: .medium))
-            .foregroundStyle(Color.atlasBlack)
-            .autocorrectionDisabled()
-            .padding(16)
-            .background(Color.white.opacity(0.7))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            HStack(spacing: 10) {
+                // Flag button
+                Button { showFlagPicker = true } label: {
+                    Text(destinationFlag)
+                        .font(.system(size: 28))
+                        .frame(width: 52, height: 52)
+                        .background(Color.white.opacity(0.7))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                TextField("", text: $country, prompt:
+                    Text("e.g. Japan").foregroundStyle(Color.atlasBlack.opacity(0.35))
+                )
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.atlasBlack)
+                .autocorrectionDisabled()
+                .padding(16)
+                .background(Color.white.opacity(0.7))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
         }
     }
 
@@ -234,6 +268,31 @@ struct EditTripView: View {
                     .foregroundStyle(Color.atlasBlack.opacity(0.4))
                 TextField("e.g. Tokyo Adventure", text: $tripName)
                     .font(.system(size: 15, weight: .medium))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(Color.white.opacity(0.7))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+        }
+    }
+
+    // MARK: - Notes Field
+
+    private var notesField: some View {
+        VStack(spacing: 8) {
+            Text("Notes (Optional)")
+                .atlasLabel()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 4)
+
+            HStack(alignment: .top) {
+                Image(systemName: "note.text")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.atlasBlack.opacity(0.4))
+                    .padding(.top, 2)
+                TextField("Trip notes, reminders, packing ideas…", text: $notes, axis: .vertical)
+                    .font(.system(size: 15, weight: .medium))
+                    .lineLimit(3...6)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -443,6 +502,9 @@ struct EditTripView: View {
                 ForEach(TripStatus.allCases, id: \.rawValue) { s in
                     Button {
                         trip.status = s
+                        if s == .completed {
+                            Task { await autoCreateVisitedLocation() }
+                        }
                         Haptics.light()
                     } label: {
                         Text(s.label)
@@ -543,22 +605,54 @@ struct EditTripView: View {
     private func saveChanges() {
         guard isValid else { return }
         let dest = destination.trimmingCharacters(in: .whitespaces).uppercased()
-        trip.destination   = dest
-        trip.country       = country.trimmingCharacters(in: .whitespaces)
-        trip.name          = tripName.trimmingCharacters(in: .whitespaces).isEmpty ? dest.capitalized : tripName.trimmingCharacters(in: .whitespaces)
-        trip.startDate     = startDate
-        trip.endDate       = endDate
-        trip.travelerCount = travelerCount
-        trip.budget        = Double(budget.replacingOccurrences(of: ",", with: "."))
-        trip.cardColorHex  = selectedColorHex
+        trip.destination     = dest
+        trip.country         = country.trimmingCharacters(in: .whitespaces)
+        trip.destinationFlag = destinationFlag
+        trip.name            = tripName.trimmingCharacters(in: .whitespaces).isEmpty ? dest.capitalized : tripName.trimmingCharacters(in: .whitespaces)
+        trip.notes           = notes
+        trip.startDate       = startDate
+        trip.endDate         = endDate
+        trip.travelerCount   = travelerCount
+        trip.budget          = Double(budget.replacingOccurrences(of: ",", with: "."))
+        trip.cardColorHex    = selectedColorHex
         Haptics.success()
         dismiss()
     }
 
     private func archiveTrip() {
         trip.status = .completed
+        Task { await autoCreateVisitedLocation() }
         Haptics.success()
         dismiss()
+    }
+
+    /// Geocodes the trip destination and inserts a VisitedLocation if one doesn't exist yet.
+    private func autoCreateVisitedLocation() async {
+        let query = [trip.destination.capitalized, trip.country]
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
+
+        guard let coord = await geocodeOnce(query) else { return }
+
+        await MainActor.run {
+            // Avoid duplicates
+            let loc = VisitedLocation(
+                name: trip.destination.capitalized,
+                latitude: coord.latitude,
+                longitude: coord.longitude,
+                dateVisited: trip.endDate,
+                source: "trip"
+            )
+            modelContext.insert(loc)
+        }
+    }
+
+    private func geocodeOnce(_ address: String) async -> CLLocationCoordinate2D? {
+        await withCheckedContinuation { continuation in
+            CLGeocoder().geocodeAddressString(address) { placemarks, _ in
+                continuation.resume(returning: placemarks?.first?.location?.coordinate)
+            }
+        }
     }
 
     private func deleteTrip() {

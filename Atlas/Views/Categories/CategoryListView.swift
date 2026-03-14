@@ -26,7 +26,7 @@ struct CategoryListView: View {
             } else {
                 LazyVStack(spacing: 8) {
                     ForEach(items) { item in
-                        TripItemRow(item: item)
+                        TripItemRow(item: item, showAttribution: trip.isShared)
                     }
                 }
             }
@@ -54,6 +54,7 @@ struct CategoryListView: View {
 
 struct TripItemRow: View {
     let item: TripItem
+    var showAttribution: Bool = false
     @Environment(\.modelContext) private var modelContext
     @Environment(UserProfile.self) private var userProfile
     @State private var showDetail = false
@@ -95,6 +96,15 @@ struct TripItemRow: View {
                             .font(.system(size: 12))
                             .foregroundStyle(Color.atlasBlack.opacity(0.45))
                             .lineLimit(1)
+                    }
+                    if showAttribution && !item.addedByName.isEmpty {
+                        Text("by \(item.addedByName)")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.atlasTeal.opacity(0.75))
+                            .clipShape(Capsule())
                     }
                 }
 

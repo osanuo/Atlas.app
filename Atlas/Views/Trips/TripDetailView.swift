@@ -6,6 +6,7 @@
 import SwiftUI
 import SwiftData
 import MapKit
+import CloudKit
 
 struct TripDetailView: View {
     let trip: Trip
@@ -17,6 +18,7 @@ struct TripDetailView: View {
     @State private var selectedTab: TripTab = .collections
     @State private var showAddItem = false
     @State private var showEditTrip = false
+    @State private var showShareTrip = false
 
     // Booking stat helpers
     private var confirmedFlights: Bool {
@@ -26,15 +28,6 @@ struct TripDetailView: View {
         trip.items.contains { $0.category == .accommodation && $0.bookingStatus == .confirmed }
     }
 
-    // Share summary text
-    private var shareSummary: String {
-        var lines = ["\(trip.destination) — \(trip.dateRangeString)"]
-        lines.append("\(trip.durationDays) days · \(trip.travelerCount) traveler\(trip.travelerCount == 1 ? "" : "s")")
-        if let budget = trip.budget { lines.append("Budget: \(budget.asCurrency(userProfile.currencySymbol))") }
-        lines.append("Items planned: \(trip.items.count)")
-        return lines.joined(separator: "\n")
-    }
-
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
@@ -42,10 +35,17 @@ struct TripDetailView: View {
                 detailHeader
                     .tealHeader()
 
+                // MARK: Sync Status Bar (shared trips only)
+                if trip.isShared {
+                    syncStatusBar
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
+                }
+
                 // MARK: Stats Row
                 statsRow
                     .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    .padding(.top, trip.isShared ? 8 : 20)
 
                 // MARK: Tab Bar
                 tabBar
@@ -67,14 +67,19 @@ struct TripDetailView: View {
         }
         .overlay(alignment: .topTrailing) {
             HStack(spacing: 10) {
-                // Share
-                ShareLink(item: shareSummary) {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 36, height: 36)
-                        .background(Color.white.opacity(0.2))
-                        .clipShape(Circle())
+                // Share / Collaborate
+                Button {
+                    showShareTrip = true
+                    Haptics.light()
+                } label: {
+                    ZStack {
+                        Image(systemName: trip.isShared ? "person.2.fill" : "square.and.arrow.up")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.white)
+                    }
+                    .frame(width: 36, height: 36)
+                    .background(trip.isShared ? Color.atlasTeal.opacity(0.8) : Color.white.opacity(0.2))
+                    .clipShape(Circle())
                 }
                 // Edit / ⋯
                 Button {
@@ -104,6 +109,10 @@ struct TripDetailView: View {
         }
         .sheet(isPresented: $showEditTrip) {
             EditTripView(trip: trip)
+        }
+        .sheet(isPresented: $showShareTrip) {
+            ShareTripView(trip: trip)
+                .presentationDetents([.medium, .large])
         }
     }
 
@@ -149,10 +158,64 @@ struct TripDetailView: View {
             Text("\(trip.crew.count) Travelers")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.white)
+            if trip.isShared {
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 6, height: 6)
+                    Text("Live")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+                .padding(.leading, 2)
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .glassCard(cornerRadius: 20)
+    }
+
+    // MARK: - Sync Status Bar
+
+    private var syncStatusBar: some View {
+        let mgr = CloudKitSharingManager.shared
+        return HStack(spacing: 6) {
+            switch mgr.syncState {
+            case .syncing:
+                ProgressView()
+                    .scaleEffect(0.7)
+                    .tint(Color.atlasTeal)
+                Text("Syncing…")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.atlasTeal)
+            case .upToDate:
+                Image(systemName: "checkmark.icloud")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.atlasTeal)
+                Text("Up to date")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.atlasTeal)
+            case .error:
+                Image(systemName: "exclamationmark.icloud")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.red)
+                Text("Sync error")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.red)
+            default:
+                Image(systemName: "icloud")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Color.atlasBlack.opacity(0.4))
+                Text("Shared trip")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.atlasBlack.opacity(0.4))
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.white.opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 
     // MARK: - Stats Row

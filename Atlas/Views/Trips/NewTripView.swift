@@ -17,6 +17,7 @@ struct NewTripView: View {
 
     @State private var destination = ""
     @State private var country = ""
+    @State private var destinationFlag = "✈️"
     @State private var startDate   = Date()
     @State private var endDate     = Date().addingTimeInterval(86400 * 7)
     @State private var travelerCount = 1
@@ -25,6 +26,7 @@ struct NewTripView: View {
 
     @State private var showStartPicker = false
     @State private var showEndPicker   = false
+    @State private var showFlagPicker  = false
 
     @FocusState private var budgetFocused: Bool
 
@@ -80,9 +82,18 @@ struct NewTripView: View {
         .sheet(isPresented: $showEndPicker) {
             DatePickerSheet(title: "Return", date: $endDate)
         }
+        .sheet(isPresented: $showFlagPicker) {
+            FlagPickerSheet(selectedFlag: $destinationFlag)
+        }
         .onAppear {
             if let pre = initialDestination, !pre.isEmpty {
                 destination = pre.uppercased()
+            }
+        }
+        .onChange(of: country) { _, newCountry in
+            // Auto-detect flag emoji from country name
+            if let detected = flagEmoji(fromCountryName: newCountry), destinationFlag == "✈️" {
+                destinationFlag = detected
             }
         }
     }
@@ -164,25 +175,42 @@ struct NewTripView: View {
         }
     }
 
-    // MARK: - Country Field
+    // MARK: - Country + Flag Field
 
     private var countryField: some View {
         VStack(spacing: 8) {
-            Text("Country")
+            Text("Country & Flag")
                 .atlasLabel()
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.leading, 4)
 
-            TextField("", text: $country, prompt:
-                Text("e.g. Japan").foregroundStyle(Color.atlasBlack.opacity(0.35))
-            )
-            .font(.system(size: 15, weight: .medium))
-            .foregroundStyle(Color.atlasBlack)
-            .autocorrectionDisabled()
-            .padding(16)
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+            HStack(spacing: 10) {
+                // Flag button — tap to override auto-detected emoji
+                Button { showFlagPicker = true } label: {
+                    Text(destinationFlag)
+                        .font(.system(size: 28))
+                        .frame(width: 52, height: 52)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                TextField("", text: $country, prompt:
+                    Text("e.g. Japan").foregroundStyle(Color.atlasBlack.opacity(0.35))
+                )
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(Color.atlasBlack)
+                .autocorrectionDisabled()
+                .padding(16)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+            }
         }
     }
 
@@ -374,6 +402,7 @@ struct NewTripView: View {
             name: destination.trimmingCharacters(in: .whitespaces).capitalized,
             destination: destination.trimmingCharacters(in: .whitespaces).uppercased(),
             country: country.trimmingCharacters(in: .whitespaces),
+            destinationFlag: destinationFlag,
             startDate: startDate,
             endDate: endDate,
             cardColorHex: Trip.cardColorHex(for: colorIndex),
@@ -388,6 +417,167 @@ struct NewTripView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             dismiss()
         }
+    }
+}
+
+// MARK: - Flag Helpers
+
+/// Converts a country name to a flag emoji using Locale + Unicode regional indicators.
+func flagEmoji(fromCountryName name: String) -> String? {
+    let trimmed = name.trimmingCharacters(in: .whitespaces)
+    guard trimmed.count >= 2 else { return nil }
+    for code in NSLocale.isoCountryCodes {
+        guard let localised = Locale.current.localizedString(forRegionCode: code) else { continue }
+        if localised.localizedCaseInsensitiveContains(trimmed) ||
+           trimmed.localizedCaseInsensitiveContains(localised) {
+            return flagEmojiFromISO(code)
+        }
+    }
+    return nil
+}
+
+func flagEmojiFromISO(_ isoCode: String) -> String {
+    let base: UInt32 = 127397 // offset to regional indicator symbol letters
+    var emoji = ""
+    for scalar in isoCode.uppercased().unicodeScalars {
+        if let s = Unicode.Scalar(base + scalar.value) {
+            emoji.append(Character(s))
+        }
+    }
+    return emoji
+}
+
+// MARK: - Flag Picker Sheet
+
+struct FlagPickerSheet: View {
+    @Binding var selectedFlag: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var customEmoji = ""
+    @FocusState private var emojiFieldFocused: Bool
+
+    // Common destination flags for quick selection
+    private let commonFlags: [(String, String)] = [
+        ("🇯🇵", "Japan"), ("🇫🇷", "France"), ("🇮🇹", "Italy"), ("🇪🇸", "Spain"),
+        ("🇬🇧", "UK"), ("🇩🇪", "Germany"), ("🇺🇸", "USA"), ("🇵🇹", "Portugal"),
+        ("🇬🇷", "Greece"), ("🇳🇱", "Netherlands"), ("🇧🇪", "Belgium"), ("🇨🇭", "Switzerland"),
+        ("🇦🇹", "Austria"), ("🇸🇪", "Sweden"), ("🇳🇴", "Norway"), ("🇩🇰", "Denmark"),
+        ("🇵🇱", "Poland"), ("🇨🇿", "Czechia"), ("🇭🇺", "Hungary"), ("🇹🇷", "Türkiye"),
+        ("🇹🇭", "Thailand"), ("🇻🇳", "Vietnam"), ("🇮🇩", "Indonesia"), ("🇸🇬", "Singapore"),
+        ("🇰🇷", "South Korea"), ("🇨🇳", "China"), ("🇮🇳", "India"), ("🇦🇪", "UAE"),
+        ("🇲🇦", "Morocco"), ("🇿🇦", "South Africa"), ("🇪🇬", "Egypt"), ("🇰🇪", "Kenya"),
+        ("🇧🇷", "Brazil"), ("🇦🇷", "Argentina"), ("🇲🇽", "Mexico"), ("🇨🇦", "Canada"),
+        ("🇦🇺", "Australia"), ("🇳🇿", "New Zealand"), ("🇮🇸", "Iceland"), ("🇲🇻", "Maldives"),
+        ("🇨🇺", "Cuba"), ("🇯🇲", "Jamaica"), ("🇵🇪", "Peru"), ("🇨🇱", "Chile"),
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            ZStack {
+                Color.atlasTeal
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 32, height: 32)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(Circle())
+                    }
+                    Spacer()
+                    Text("Choose Flag")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Color.clear.frame(width: 32, height: 32)
+                }
+                .padding(.horizontal, 20)
+            }
+            .frame(height: 56)
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    Spacer().frame(height: 8)
+
+                    // Custom emoji input
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Custom Flag Emoji")
+                            .atlasLabel()
+                            .padding(.leading, 4)
+
+                        HStack(spacing: 12) {
+                            Text(customEmoji.isEmpty ? selectedFlag : customEmoji)
+                                .font(.system(size: 32))
+                                .frame(width: 52, height: 52)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+
+                            TextField("Type any emoji", text: $customEmoji)
+                                .font(.system(size: 18))
+                                .focused($emojiFieldFocused)
+                                .padding(14)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+
+                            Button {
+                                let trimmed = customEmoji.trimmingCharacters(in: .whitespaces)
+                                if !trimmed.isEmpty { selectedFlag = trimmed }
+                                dismiss()
+                            } label: {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 46, height: 46)
+                                    .background(Color.atlasBlack)
+                                    .clipShape(Circle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
+                    // Quick pick grid
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Common Destinations")
+                            .atlasLabel()
+                            .padding(.leading, 4)
+
+                        LazyVGrid(columns: Array(repeating: .init(.flexible()), count: 6), spacing: 10) {
+                            ForEach(commonFlags, id: \.0) { (flag, country) in
+                                Button {
+                                    selectedFlag = flag
+                                    dismiss()
+                                } label: {
+                                    VStack(spacing: 4) {
+                                        Text(flag)
+                                            .font(.system(size: 26))
+                                        Text(country.prefix(6).uppercased())
+                                            .font(.system(size: 7, weight: .semibold, design: .monospaced))
+                                            .foregroundStyle(Color.atlasBlack.opacity(0.4))
+                                            .lineLimit(1)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 8)
+                                    .background(selectedFlag == flag ? Color.atlasTeal.opacity(0.1) : Color.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(selectedFlag == flag ? Color.atlasTeal.opacity(0.4) : Color.clear, lineWidth: 1.5)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                    }
+
+                    Spacer().frame(height: 40)
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+        .background(Color.atlasBeige.ignoresSafeArea())
+        .onAppear { emojiFieldFocused = false }
     }
 }
 

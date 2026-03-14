@@ -267,6 +267,8 @@ private struct FeatureRow: View {
 private struct SignInPage: View {
     var onComplete: () -> Void
     @State private var appeared = false
+    @State private var nameInput = ""
+    @FocusState private var nameFocused: Bool
 
     var body: some View {
         ZStack {
@@ -322,7 +324,7 @@ private struct SignInPage: View {
 
                 Spacer().frame(height: 12)
 
-                Text("Sign in to sync your trips across devices\nand unlock full collaboration features.")
+                Text("Sign in to sync trips across devices\nand enable real-time collaboration.")
                     .font(.system(size: 14))
                     .foregroundStyle(.white.opacity(0.5))
                     .multilineTextAlignment(.center)
@@ -331,7 +333,39 @@ private struct SignInPage: View {
                     .opacity(appeared ? 1.0 : 0)
                     .animation(.easeOut(duration: 0.5).delay(0.35), value: appeared)
 
-                Spacer()
+                Spacer().frame(height: 28)
+
+                // Name field — attribution works even without SIWA
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("YOUR NAME")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.35))
+                        .kerning(1.5)
+                        .padding(.leading, 4)
+
+                    TextField("", text: $nameInput, prompt:
+                        Text("e.g. Alex Chen").foregroundStyle(Color.white.opacity(0.25))
+                    )
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.white)
+                    .focused($nameFocused)
+                    .submitLabel(.done)
+                    .onSubmit { nameFocused = false }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(nameFocused ? Color.atlasTeal.opacity(0.6) : Color.white.opacity(0.12), lineWidth: 1)
+                    )
+                }
+                .padding(.horizontal, 32)
+                .offset(y: appeared ? 0 : 20)
+                .opacity(appeared ? 1.0 : 0)
+                .animation(.easeOut(duration: 0.45).delay(0.42), value: appeared)
+
+                Spacer().frame(height: 20)
 
                 // SIWA button
                 SignInWithAppleButton(.signIn) { request in
@@ -351,6 +385,7 @@ private struct SignInPage: View {
 
                 // Skip button
                 Button {
+                    commitName()
                     onComplete()
                 } label: {
                     Text("Continue without signing in")
@@ -366,16 +401,30 @@ private struct SignInPage: View {
                 Spacer().frame(height: 100)
             }
         }
-        .onAppear { appeared = true }
+        .onAppear {
+            appeared = true
+            let existing = UserProfile.shared.displayName
+            if existing != "Traveler" { nameInput = existing }
+        }
+        .onTapGesture { nameFocused = false }
+    }
+
+    private func commitName() {
+        let trimmed = nameInput.trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty {
+            UserProfile.shared.displayName = trimmed
+        }
     }
 
     private func handleSignIn(result: Result<ASAuthorization, Error>) {
+        commitName()
         switch result {
         case .success(let auth):
             if let credential = auth.credential as? ASAuthorizationAppleIDCredential {
                 let given  = credential.fullName?.givenName  ?? ""
                 let family = credential.fullName?.familyName ?? ""
                 let name   = [given, family].filter { !$0.isEmpty }.joined(separator: " ")
+                // Apple-provided name takes precedence (only returned on first SIWA login)
                 if !name.isEmpty {
                     UserProfile.shared.displayName = name
                 }

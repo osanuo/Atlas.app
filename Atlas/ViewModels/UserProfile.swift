@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Observation
+import CloudKit
 
 @Observable
 final class UserProfile {
@@ -34,6 +35,12 @@ final class UserProfile {
 
     var hasOnboarded: Bool {
         didSet { UserDefaults.standard.set(hasOnboarded, forKey: "atlas_hasOnboarded") }
+    }
+
+    /// CKRecord.ID string of the current iCloud user — used for `addedByUserID` attribution.
+    /// Fetched once on first launch and cached to UserDefaults.
+    var iCloudUserRecordID: String? {
+        didSet { UserDefaults.standard.set(iCloudUserRecordID, forKey: "atlas_icloudUserRecordID") }
     }
 
     var currencyCode: String {
@@ -69,9 +76,10 @@ final class UserProfile {
         self.totalTrips     = d.integer(forKey: "atlas_totalTrips")
         self.totalCountries = d.integer(forKey: "atlas_totalCountries")
         self.totalMiles     = d.integer(forKey: "atlas_totalMiles")
-        self.hasOnboarded   = d.bool(forKey: "atlas_hasOnboarded")
-        self.currencyCode   = d.string(forKey: "atlas_currencyCode") ?? "USD"
-        self.avatarImageData = try? Data(contentsOf: UserProfile.avatarFileURL)
+        self.hasOnboarded         = d.bool(forKey: "atlas_hasOnboarded")
+        self.currencyCode         = d.string(forKey: "atlas_currencyCode") ?? "USD"
+        self.iCloudUserRecordID   = d.string(forKey: "atlas_icloudUserRecordID")
+        self.avatarImageData      = try? Data(contentsOf: UserProfile.avatarFileURL)
 
         let savedId = d.string(forKey: "atlas_entryId")
         if let savedId {
@@ -131,6 +139,24 @@ final class UserProfile {
             return "\(totalMiles / 1000)K"
         }
         return String(totalMiles)
+    }
+
+    // MARK: - iCloud User Identity
+
+    /// Fetches the CKRecord user ID from CloudKit and caches it.
+    /// Safe to call multiple times — no-ops if already known.
+    func fetchCloudKitUserRecordIDIfNeeded() {
+        guard iCloudUserRecordID == nil else { return }
+        Task {
+            do {
+                let id = try await CKContainer.default().userRecordID()
+                await MainActor.run {
+                    self.iCloudUserRecordID = id.recordName
+                }
+            } catch {
+                // Not signed into iCloud — leave nil, attribution will use displayName only
+            }
+        }
     }
 
     // MARK: - Update from trips

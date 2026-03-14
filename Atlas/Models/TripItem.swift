@@ -150,6 +150,8 @@ final class TripItem {
     var dayAssigned: Date? = nil
     var timeAssigned: Date? = nil
     var createdAt: Date = Date()
+    var addedByUserID: String = ""        // CKRecord creator user record ID
+    var addedByName: String = ""          // display name at creation time
 
     var trip: Trip?
 

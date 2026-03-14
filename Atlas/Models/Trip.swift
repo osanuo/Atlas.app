@@ -55,6 +55,11 @@ final class Trip {
     var notes: String = ""
     var createdAt: Date = Date()
 
+    // MARK: Collaboration
+    var isShared: Bool = false
+    var cloudKitZoneName: String? = nil   // "atlas-shared-{uuid}", nil = not shared
+    var shareURL: String? = nil           // cached CKShare URL for re-sharing
+
     @Relationship(deleteRule: .cascade, inverse: \TripItem.trip)
     private var _items: [TripItem]? = nil
     var items: [TripItem] {

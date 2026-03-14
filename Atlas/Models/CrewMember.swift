@@ -49,6 +49,7 @@ final class CrewMember {
     var conflictNote: String = ""
     var avatarSeed: Int = 0
     var invitedAt: Date = Date()
+    var iCloudUserRecordID: String? = nil  // CKShare.Participant user record ID
 
     var trip: Trip?
 

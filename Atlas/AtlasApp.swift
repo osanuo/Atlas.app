@@ -7,9 +7,40 @@
 
 import SwiftUI
 import SwiftData
+import CloudKit
+
+// MARK: - App Delegate (needed for CKShare acceptance callback)
+
+final class AtlasAppDelegate: NSObject, UIApplicationDelegate {
+
+    func application(
+        _ application: UIApplication,
+        userDidAcceptCloudKitShareWith metadata: CKShare.Metadata
+    ) {
+        // Store metadata so the active scene can process it with a ModelContext
+        CloudKitSharingManager.shared.pendingShareAcceptance = metadata
+    }
+
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        // CloudKit delivers silent pushes for zone changes — trigger a sync
+        guard CKNotification(fromRemoteNotificationDictionary: userInfo) != nil else {
+            completionHandler(.noData)
+            return
+        }
+        // The actual fetch happens when the app foregrounds via .onReceive(NotificationCenter…)
+        // We just acknowledge the push here.
+        completionHandler(.newData)
+    }
+}
 
 @main
 struct AtlasApp: App {
+
+    @UIApplicationDelegateAdaptor(AtlasAppDelegate.self) private var appDelegate
 
     @State private var container: ModelContainer?
     // Tracks hasOnboarded reactively (UserProfile is @Observable)
@@ -24,6 +55,14 @@ struct AtlasApp: App {
                             .environment(profile)
                             .modelContainer(container)
                             .transition(.opacity)
+                            .onAppear { profile.fetchCloudKitUserRecordIDIfNeeded() }
+                            // Process pending CKShare acceptance when ModelContext is available
+                            .task(id: CloudKitSharingManager.shared.pendingShareAcceptance) {
+                                guard let metadata = CloudKitSharingManager.shared.pendingShareAcceptance else { return }
+                                CloudKitSharingManager.shared.pendingShareAcceptance = nil
+                                let ctx = ModelContext(container)
+                                _ = try? await CloudKitSharingManager.shared.acceptShare(metadata: metadata, in: ctx)
+                            }
                     } else {
                         OnboardingView {
                             profile.hasOnboarded = true

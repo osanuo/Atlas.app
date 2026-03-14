@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import CloudKit
 
 struct AddItemView: View {
     let trip: Trip?
@@ -13,6 +14,7 @@ struct AddItemView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(UserProfile.self) private var userProfile
 
     @State private var title = ""
     @State private var selectedCategory: ItemCategory
@@ -67,7 +69,7 @@ struct AddItemView: View {
                     TextField("Address / Location", text: $locationAddress)
                         .autocorrectionDisabled()
                     HStack {
-                        Text("$")
+                        Text(userProfile.currencySymbol)
                             .foregroundStyle(Color.secondary)
                         TextField("Price (optional)", text: $priceText)
                             .keyboardType(.decimalPad)
@@ -139,6 +141,10 @@ struct AddItemView: View {
             item.price           = price
             item.priority        = priority
             item.bookingStatus   = bookingStatus
+            // Sync edit to CloudKit if trip is shared
+            if let trip, trip.isShared {
+                Task { try? await CloudKitSharingManager.shared.syncItem(item, in: trip) }
+            }
         } else {
             // Create new
             let newItem = TripItem(
@@ -152,9 +158,18 @@ struct AddItemView: View {
                 bookingStatus: bookingStatus,
                 trip: trip
             )
+            // Set attribution for shared trips
+            if let trip, trip.isShared {
+                newItem.addedByName   = userProfile.displayName
+                newItem.addedByUserID = userProfile.iCloudUserRecordID ?? ""
+            }
             modelContext.insert(newItem)
             if let trip {
                 trip.items.append(newItem)
+                // Sync new item to CloudKit if trip is shared
+                if trip.isShared {
+                    Task { try? await CloudKitSharingManager.shared.syncItem(newItem, in: trip) }
+                }
             }
         }
 
