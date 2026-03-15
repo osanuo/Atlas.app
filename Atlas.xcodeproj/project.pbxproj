@@ -11,6 +11,8 @@
 		6FA42B892F66B13100590FE5 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6FA42B882F66B13100590FE5 /* SwiftUI.framework */; };
 		6FA42B9A2F66B13300590FE5 /* AtlasWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6FA42B842F66B13100590FE5 /* AtlasWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		E8D4EA679BCE459894C52A4C /* AtlasWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A240D0A2560B42C18CBF0058 /* AtlasWidget.swift */; };
+		C0A1B2C3D4E5F6A7B8C9D0F1 /* ShareExtensionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A1B2C3D4E5F6A7B8C9D0E1 /* ShareExtensionViewController.swift */; };
+		C0A1B2C3D4E5F6A7B8C9D0F2 /* AtlasShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C0A1B2C3D4E5F6A7B8C9D0E4 /* AtlasShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -20,6 +22,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 6FA42B832F66B13100590FE5;
 			remoteInfo = AtlasWidgetExtension;
+		};
+		C0A1B2C3D4E5F6A7B8C9D0F3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6F23C3832F6173BF008BE6CC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C0A1B2C3D4E5F6A7B8C9D0A4;
+			remoteInfo = AtlasShareExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -31,6 +40,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				6FA42B9A2F66B13300590FE5 /* AtlasWidgetExtension.appex in Embed Foundation Extensions */,
+				C0A1B2C3D4E5F6A7B8C9D0F2 /* AtlasShareExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -45,6 +55,10 @@
 		6FA42BA12F66B17700590FE5 /* AtlasWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AtlasWidgetExtension.entitlements; sourceTree = "<group>"; };
 		A240D0A2560B42C18CBF0058 /* AtlasWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AtlasWidget.swift; sourceTree = "<group>"; };
 		B5B9FF93F52547F2A8E9C88C /* AtlasWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AtlasWidget.entitlements; sourceTree = "<group>"; };
+		C0A1B2C3D4E5F6A7B8C9D0E1 /* ShareExtensionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtensionViewController.swift; sourceTree = "<group>"; };
+		C0A1B2C3D4E5F6A7B8C9D0E2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C0A1B2C3D4E5F6A7B8C9D0E3 /* AtlasShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AtlasShareExtension.entitlements; sourceTree = "<group>"; };
+		C0A1B2C3D4E5F6A7B8C9D0E4 /* AtlasShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AtlasShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -61,6 +75,13 @@
 				Info.plist,
 			);
 			target = 6FA42B832F66B13100590FE5 /* AtlasWidgetExtension */;
+		};
+		C0A1B2C3D4E5F6A7B8C9D0F5 /* Exceptions for "AtlasShareExtension" folder in "AtlasShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C0A1B2C3D4E5F6A7B8C9D0A4 /* AtlasShareExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -79,6 +100,14 @@
 				6FA42B9E2F66B13300590FE5 /* Exceptions for "AtlasWidget" folder in "AtlasWidgetExtension" target */,
 			);
 			path = AtlasWidget;
+			sourceTree = "<group>";
+		};
+		C0A1B2C3D4E5F6A7B8C9D0F4 /* AtlasShareExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C0A1B2C3D4E5F6A7B8C9D0F5 /* Exceptions for "AtlasShareExtension" folder in "AtlasShareExtension" target */,
+			);
+			path = AtlasShareExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -100,6 +129,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C0A1B2C3D4E5F6A7B8C9D0A2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -108,8 +144,10 @@
 			children = (
 				6FA42BA12F66B17700590FE5 /* AtlasWidgetExtension.entitlements */,
 				B5B9FF93F52547F2A8E9C88C /* AtlasWidget.entitlements */,
+				C0A1B2C3D4E5F6A7B8C9D0E3 /* AtlasShareExtension.entitlements */,
 				6F23C38D2F6173BF008BE6CC /* Atlas */,
 				6FA42B8A2F66B13100590FE5 /* AtlasWidget */,
+				C0A1B2C3D4E5F6A7B8C9D0F4 /* AtlasShareExtension */,
 				6FA42B852F66B13100590FE5 /* Frameworks */,
 				6F23C38C2F6173BF008BE6CC /* Products */,
 			);
@@ -120,6 +158,7 @@
 			children = (
 				6F23C38B2F6173BF008BE6CC /* Atlas.app */,
 				6FA42B842F66B13100590FE5 /* AtlasWidgetExtension.appex */,
+				C0A1B2C3D4E5F6A7B8C9D0E4 /* AtlasShareExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -149,6 +188,7 @@
 			);
 			dependencies = (
 				6FA42B992F66B13300590FE5 /* PBXTargetDependency */,
+				C0A1B2C3D4E5F6A7B8C9D0A5 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				6F23C38D2F6173BF008BE6CC /* Atlas */,
@@ -182,6 +222,28 @@
 			productReference = 6FA42B842F66B13100590FE5 /* AtlasWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		C0A1B2C3D4E5F6A7B8C9D0A4 /* AtlasShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C0A1B2C3D4E5F6A7B8C9D0B3 /* Build configuration list for PBXNativeTarget "AtlasShareExtension" */;
+			buildPhases = (
+				C0A1B2C3D4E5F6A7B8C9D0A1 /* Sources */,
+				C0A1B2C3D4E5F6A7B8C9D0A2 /* Frameworks */,
+				C0A1B2C3D4E5F6A7B8C9D0A3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C0A1B2C3D4E5F6A7B8C9D0F4 /* AtlasShareExtension */,
+			);
+			name = AtlasShareExtension;
+			packageProductDependencies = (
+			);
+			productName = AtlasShareExtension;
+			productReference = C0A1B2C3D4E5F6A7B8C9D0E4 /* AtlasShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -196,6 +258,9 @@
 						CreatedOnToolsVersion = 26.3;
 					};
 					6FA42B832F66B13100590FE5 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					C0A1B2C3D4E5F6A7B8C9D0A4 = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
@@ -216,6 +281,7 @@
 			targets = (
 				6F23C38A2F6173BF008BE6CC /* Atlas */,
 				6FA42B832F66B13100590FE5 /* AtlasWidgetExtension */,
+				C0A1B2C3D4E5F6A7B8C9D0A4 /* AtlasShareExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -229,6 +295,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		6FA42B822F66B13100590FE5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C0A1B2C3D4E5F6A7B8C9D0A3 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -253,6 +326,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C0A1B2C3D4E5F6A7B8C9D0A1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C0A1B2C3D4E5F6A7B8C9D0F1 /* ShareExtensionViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -260,6 +341,11 @@
 			isa = PBXTargetDependency;
 			target = 6FA42B832F66B13100590FE5 /* AtlasWidgetExtension */;
 			targetProxy = 6FA42B982F66B13300590FE5 /* PBXContainerItemProxy */;
+		};
+		C0A1B2C3D4E5F6A7B8C9D0A5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C0A1B2C3D4E5F6A7B8C9D0A4 /* AtlasShareExtension */;
+			targetProxy = C0A1B2C3D4E5F6A7B8C9D0F3 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -515,6 +601,64 @@
 			};
 			name = Release;
 		};
+		C0A1B2C3D4E5F6A7B8C9D0B1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AtlasShareExtension/AtlasShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RHA776CJ2J;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AtlasShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AtlasShareExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.osanuo.Atlas.AtlasShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C0A1B2C3D4E5F6A7B8C9D0B2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AtlasShareExtension/AtlasShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = RHA776CJ2J;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = AtlasShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AtlasShareExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.osanuo.Atlas.AtlasShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -541,6 +685,15 @@
 			buildConfigurations = (
 				6FA42B9C2F66B13300590FE5 /* Debug */,
 				6FA42B9D2F66B13300590FE5 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C0A1B2C3D4E5F6A7B8C9D0B3 /* Build configuration list for PBXNativeTarget "AtlasShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C0A1B2C3D4E5F6A7B8C9D0B1 /* Debug */,
+				C0A1B2C3D4E5F6A7B8C9D0B2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
