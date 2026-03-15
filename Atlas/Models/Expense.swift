@@ -14,6 +14,12 @@ final class Expense {
     var categoryRaw: String = ItemCategory.restaurants.rawValue
     var date: Date = Date()
 
+    /// Who paid this expense (display name of crew member, empty = unspecified)
+    var paidByName: String = ""
+
+    /// Receipt photo stored externally to avoid bloating the SQLite store
+    @Attribute(.externalStorage) var photoData: Data?
+
     var trip: Trip?
 
     init(
@@ -21,6 +27,8 @@ final class Expense {
         note: String = "",
         category: ItemCategory = .restaurants,
         date: Date = Date(),
+        paidByName: String = "",
+        photoData: Data? = nil,
         trip: Trip? = nil
     ) {
         self.id          = UUID()
@@ -28,6 +36,8 @@ final class Expense {
         self.note        = note
         self.categoryRaw = category.rawValue
         self.date        = date
+        self.paidByName  = paidByName
+        self.photoData   = photoData
         self.trip        = trip
     }
 

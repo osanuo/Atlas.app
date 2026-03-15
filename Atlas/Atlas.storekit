@@ -1,0 +1,57 @@
+{
+  "identifier" : "atlas_dev",
+  "nonConsumableProducts" : [],
+  "consumableProducts" : [],
+  "subscriptionGroups" : [
+    {
+      "id" : "atlas_pro_group",
+      "name" : "Atlas Pro",
+      "subscriptions" : [
+        {
+          "adHocOfferCodeRedemptionLimit" : 0,
+          "displayPrice" : "2.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "atlas_pro_monthly_dev",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Monthly access to all Atlas Pro features: unlimited trips, collaborative sharing, map, weather, receipts, PDF export and more.",
+              "displayName" : "Atlas Pro Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "atlas.pro.monthly",
+          "referenceName" : "Atlas Pro Monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "subscriptionGroupID" : "atlas_pro_group",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOfferCodeRedemptionLimit" : 0,
+          "displayPrice" : "19.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "atlas_pro_annual_dev",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Annual access to all Atlas Pro features at a discounted rate.",
+              "displayName" : "Atlas Pro Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "atlas.pro.annual",
+          "referenceName" : "Atlas Pro Annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "subscriptionGroupID" : "atlas_pro_group",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 2,
+    "minor" : 0
+  }
+}

@@ -72,6 +72,8 @@ struct TripsView: View {
             .navigationDestination(item: $selectedTrip) { trip in
                 TripDetailView(trip: trip)
             }
+            .onChange(of: trips) { _, _ in writeWidgetData() }
+            .onAppear { writeWidgetData() }
         }
         .alert("Delete Trip", isPresented: Binding(
             get: { tripToDelete != nil },
@@ -86,6 +88,18 @@ struct TripsView: View {
                 Text("\"\(trip.name)\" and all its items will be permanently removed.")
             }
         }
+    }
+
+    // MARK: - Widget Data
+
+    private func writeWidgetData() {
+        let shared = UserDefaults(suiteName: "group.com.osanuo.Atlas")
+        // Find next upcoming trip (active or planning/confirmed with future start date)
+        let nextTrip = (activeTrip ?? upcomingTrips.first)
+        shared?.set(nextTrip?.destination ?? "", forKey: "widget_destination")
+        shared?.set(nextTrip?.destinationFlag ?? "✈️", forKey: "widget_flag")
+        shared?.set(nextTrip?.startDate, forKey: "widget_startDate")
+        shared?.set(nextTrip?.name ?? "", forKey: "widget_tripName")
     }
 
     // MARK: - Header

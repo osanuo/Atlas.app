@@ -13,12 +13,16 @@ struct TripDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(UserProfile.self) private var userProfile
+    @Environment(SubscriptionManager.self) private var subscriptionManager
 
     @State private var selectedCategory: ItemCategory = .restaurants
     @State private var selectedTab: TripTab = .collections
     @State private var showAddItem = false
     @State private var showEditTrip = false
     @State private var showShareTrip = false
+    @State private var showPaywall = false
+    @State private var pdfURL: URL?
+    @State private var showPDFShare = false
 
     // Booking stat helpers
     private var confirmedFlights: Bool {
@@ -81,6 +85,23 @@ struct TripDetailView: View {
                     .background(trip.isShared ? Color.atlasTeal.opacity(0.8) : Color.white.opacity(0.2))
                     .clipShape(Circle())
                 }
+                // PDF Export (Pro)
+                Button {
+                    Haptics.light()
+                    if subscriptionManager.isPro {
+                        Task { await exportPDF() }
+                    } else {
+                        showPaywall = true
+                    }
+                } label: {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 36, height: 36)
+                        .background(Color.white.opacity(0.2))
+                        .clipShape(Circle())
+                }
+
                 // Edit / ⋯
                 Button {
                     showEditTrip = true
@@ -112,7 +133,19 @@ struct TripDetailView: View {
         }
         .sheet(isPresented: $showShareTrip) {
             ShareTripView(trip: trip)
+                .environment(subscriptionManager)
                 .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environment(subscriptionManager)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+        }
+        .sheet(isPresented: $showPDFShare) {
+            if let url = pdfURL {
+                ShareSheet(items: [url])
+            }
         }
     }
 
@@ -290,6 +323,11 @@ struct TripDetailView: View {
         switch selectedTab {
         case .collections:
             VStack(spacing: 12) {
+                // Weather card (Pro — visible to all, locked for free users)
+                WeatherCard(trip: trip)
+                    .environment(subscriptionManager)
+                    .padding(.horizontal, 20)
+
                 categoryTabs
                 CategoryListView(trip: trip, category: selectedCategory)
                     .padding(.horizontal, 20)
@@ -299,6 +337,7 @@ struct TripDetailView: View {
                 .padding(.horizontal, 20)
         case .budget:
             BudgetView(trip: trip)
+                .environment(subscriptionManager)
                 .padding(.horizontal, 20)
         case .map:
             TripMapView(trip: trip)
@@ -357,6 +396,15 @@ struct TripDetailView: View {
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
         }
+    }
+
+    // MARK: - PDF Export
+
+    @MainActor
+    private func exportPDF() async {
+        let url = await PDFExportService.shared.generateItinerary(for: trip, currencySymbol: userProfile.currencySymbol)
+        pdfURL = url
+        showPDFShare = true
     }
 }
 
@@ -440,6 +488,16 @@ private struct CategoryTab: View {
 }
 
 
+// MARK: - Share Sheet (UIKit wrapper)
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let items: [Any]
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+    func updateUIViewController(_ vc: UIActivityViewController, context: Context) {}
+}
+
 #Preview {
     NavigationStack {
         TripDetailView(trip: Trip(
@@ -454,5 +512,7 @@ private struct CategoryTab: View {
             travelerCount: 5
         ))
     }
+    .environment(UserProfile.shared)
+    .environment(SubscriptionManager.shared)
     .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self], inMemory: true)
 }

@@ -16,6 +16,7 @@ struct ShareTripView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(SubscriptionManager.self) private var subscriptionManager
 
     @State private var shareURL: URL? = nil
     @State private var isCreatingShare = false
@@ -24,6 +25,7 @@ struct ShareTripView: View {
     @State private var errorMessage: String? = nil
     @State private var showStopSharingConfirm = false
     @State private var qrImage: UIImage? = nil
+    @State private var showPaywall = false
 
     private let sharingManager = CloudKitSharingManager.shared
 
@@ -108,6 +110,12 @@ struct ShareTripView: View {
             if let url = shareURL {
                 ShareLinkSheet(url: url, tripName: trip.name)
             }
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environment(subscriptionManager)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
         }
     }
 
@@ -376,6 +384,10 @@ struct ShareTripView: View {
     }
 
     private func generateShareLink() async {
+        guard subscriptionManager.isPro else {
+            showPaywall = true
+            return
+        }
         isCreatingShare = true
         do {
             let url = try await sharingManager.createShare(for: trip)

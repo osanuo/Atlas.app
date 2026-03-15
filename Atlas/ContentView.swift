@@ -2,8 +2,6 @@
 //  ContentView.swift
 //  Atlas
 //
-//  Created by Dawid Piotrowski on 11/03/2026.
-//
 
 import SwiftUI
 import SwiftData
@@ -12,9 +10,22 @@ import CloudKit
 struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showNewTrip = false
+    @State private var showPaywall = false
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(SubscriptionManager.self) private var subscriptionManager
+
     @Query(filter: #Predicate<Trip> { $0.isShared }) private var sharedTrips: [Trip]
+    @Query private var allTrips: [Trip]
+
+    // Free tier: max 2 active (non-completed) trips
+    private var activeTripsCount: Int {
+        allTrips.filter { $0.statusRaw != "completed" }.count
+    }
+
+    private var atFreeLimit: Bool {
+        !subscriptionManager.isPro && activeTripsCount >= 2
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -36,9 +47,9 @@ struct ContentView: View {
                     .tabItem { }
                     .tag(2)
 
-                CrewView()
+                MapTabView()
                     .tabItem {
-                        Label("Crew", systemImage: selectedTab == 3 ? "person.2.fill" : "person.2")
+                        Label("Map", systemImage: selectedTab == 3 ? "map.fill" : "map")
                     }
                     .tag(3)
 
@@ -52,27 +63,38 @@ struct ContentView: View {
             .onChange(of: selectedTab) { old, new in
                 if new == 2 {
                     selectedTab = old
-                    showNewTrip = true
-                    Haptics.medium()
+                    handleNewTrip()
                 }
             }
 
             // Custom floating center + button
             Button {
-                showNewTrip = true
-                Haptics.medium()
+                handleNewTrip()
             } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 54, height: 54)
-                    .background(Color.atlasBlack)
-                    .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.atlasBeige, lineWidth: 4)
-                    )
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 54, height: 54)
+                        .background(Color.atlasBlack)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.atlasBeige, lineWidth: 4)
+                        )
+
+                    // Lock badge when at free tier limit
+                    if atFreeLimit {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 16, height: 16)
+                            .background(Color.atlasTeal)
+                            .clipShape(Circle())
+                            .offset(x: 3, y: -3)
+                    }
+                }
             }
             .offset(y: -26)
         }
@@ -81,11 +103,16 @@ struct ContentView: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.hidden)
         }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environment(subscriptionManager)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+        }
         .onAppear {
             configureTabBar()
         }
         // When the app foregrounds, pull fresh changes for all shared trips.
-        // This covers: silent push received while in background + manual foreground.
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             guard !sharedTrips.isEmpty else { return }
             Task {
@@ -95,10 +122,22 @@ struct ContentView: View {
             }
         }
     }
+
+    // MARK: - Trip Creation Gate
+
+    private func handleNewTrip() {
+        Haptics.medium()
+        if atFreeLimit {
+            showPaywall = true
+        } else {
+            showNewTrip = true
+        }
+    }
 }
 
 #Preview {
     ContentView()
         .environment(UserProfile.shared)
+        .environment(SubscriptionManager.shared)
         .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self], inMemory: true)
 }

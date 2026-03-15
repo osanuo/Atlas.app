@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 // MARK: - Budget View
 
@@ -12,7 +13,10 @@ struct BudgetView: View {
     let trip: Trip
     @Environment(\.modelContext) private var modelContext
     @Environment(UserProfile.self) private var userProfile
+    @Environment(SubscriptionManager.self) private var subscriptionManager
     @State private var showAddExpense = false
+    @State private var showSplit = false
+    @State private var showPaywall = false
 
     // MARK: Computed
 
@@ -78,11 +82,51 @@ struct BudgetView: View {
             Spacer().frame(height: 80)
         }
         .overlay(alignment: .bottomTrailing) {
-            addExpenseFAB
-                .padding(.bottom, 24)
+            VStack(spacing: 10) {
+                // Split FAB (Pro, only if crew exists)
+                if !trip.crew.isEmpty {
+                    Button {
+                        if subscriptionManager.isPro {
+                            showSplit = true
+                        } else {
+                            showPaywall = true
+                        }
+                        Haptics.light()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: subscriptionManager.isPro ? "equal.circle.fill" : "lock.fill")
+                                .font(.system(size: 13, weight: .bold))
+                            Text("SPLIT")
+                                .font(.system(size: 11, weight: .bold))
+                                .kerning(0.5)
+                        }
+                        .foregroundStyle(Color.atlasBlack)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .background(Color.white)
+                        .clipShape(Capsule())
+                        .shadow(color: .black.opacity(0.1), radius: 6, x: 0, y: 3)
+                    }
+                }
+
+                addExpenseFAB
+            }
+            .padding(.bottom, 24)
         }
         .sheet(isPresented: $showAddExpense) {
             AddExpenseView(trip: trip)
+                .environment(subscriptionManager)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+        }
+        .sheet(isPresented: $showSplit) {
+            ExpenseSplitView(trip: trip)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environment(subscriptionManager)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.hidden)
         }
@@ -411,16 +455,33 @@ struct ExpenseRow: View {
     let expense: Expense
     let onDelete: () -> Void
     @Environment(UserProfile.self) private var userProfile
+    @State private var showReceipt = false
 
     var body: some View {
         HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(expense.category.accentColor.opacity(0.15))
-                    .frame(width: 40, height: 40)
-                Image(systemName: expense.category.icon)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(expense.category.accentColor)
+            // Category icon OR receipt thumbnail
+            if let data = expense.photoData, let uiImage = UIImage(data: data) {
+                Button { showReceipt = true } label: {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 40, height: 40)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.atlasTeal.opacity(0.3), lineWidth: 1.5)
+                        )
+                }
+                .buttonStyle(.plain)
+            } else {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(expense.category.accentColor.opacity(0.15))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: expense.category.icon)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(expense.category.accentColor)
+                }
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -428,9 +489,16 @@ struct ExpenseRow: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(Color.atlasBlack)
                     .lineLimit(1)
-                Text(expense.date.formatted(date: .abbreviated, time: .omitted))
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color.atlasBlack.opacity(0.4))
+                HStack(spacing: 4) {
+                    Text(expense.date.formatted(date: .abbreviated, time: .omitted))
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.atlasBlack.opacity(0.4))
+                    if !expense.paidByName.isEmpty {
+                        Text("· \(expense.paidByName)")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.atlasTeal.opacity(0.8))
+                    }
+                }
             }
 
             Spacer()
@@ -446,6 +514,36 @@ struct ExpenseRow: View {
                 Label("Delete", systemImage: "trash")
             }
         }
+        .sheet(isPresented: $showReceipt) {
+            if let data = expense.photoData, let uiImage = UIImage(data: data) {
+                ReceiptViewer(image: uiImage)
+            }
+        }
+    }
+}
+
+// MARK: - Receipt Viewer
+
+private struct ReceiptViewer: View {
+    let image: UIImage
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            Button { dismiss() } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 28))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .padding(20)
+            }
+        }
     }
 }
 
@@ -456,11 +554,16 @@ struct AddExpenseView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(UserProfile.self) private var userProfile
+    @Environment(SubscriptionManager.self) private var subscriptionManager
 
     @State private var amount: String = ""
     @State private var note: String = ""
     @State private var selectedCategory: ItemCategory = .restaurants
     @State private var date: Date = Date()
+    @State private var paidByName: String = ""
+    @State private var selectedPhoto: PhotosPickerItem?
+    @State private var receiptImageData: Data?
+    @State private var showPaywall = false
     @FocusState private var amountFocused: Bool
 
     private var isValid: Bool {
@@ -588,6 +691,127 @@ struct AddExpenseView: View {
                             .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
                     }
 
+                    // Paid by (shown only if trip has crew)
+                    if !trip.crew.isEmpty {
+                        VStack(spacing: 8) {
+                            Text("Paid By (Optional)")
+                                .atlasLabel()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.leading, 4)
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach([""] + trip.crew.map(\.name), id: \.self) { name in
+                                        Button {
+                                            paidByName = name
+                                            Haptics.light()
+                                        } label: {
+                                            Text(name.isEmpty ? "Unspecified" : name)
+                                                .font(.system(size: 12, weight: .semibold))
+                                                .foregroundStyle(paidByName == name ? .white : Color.atlasBlack)
+                                                .padding(.horizontal, 14)
+                                                .padding(.vertical, 10)
+                                                .background(paidByName == name ? Color.atlasBlack : Color.white)
+                                                .clipShape(Capsule())
+                                                .shadow(color: .black.opacity(0.04), radius: 3, x: 0, y: 2)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Receipt Photo (Pro)
+                    VStack(spacing: 8) {
+                        HStack {
+                            Text("Receipt Photo")
+                                .atlasLabel()
+                                .padding(.leading, 4)
+                            Spacer()
+                            if !subscriptionManager.isPro {
+                                ProBadge()
+                            }
+                        }
+
+                        if subscriptionManager.isPro {
+                            if let data = receiptImageData, let uiImage = UIImage(data: data) {
+                                // Preview + remove
+                                HStack(spacing: 12) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 72, height: 72)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("Receipt attached")
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundStyle(Color.atlasBlack)
+                                        Button {
+                                            receiptImageData = nil
+                                            selectedPhoto = nil
+                                        } label: {
+                                            Text("Remove")
+                                                .font(.system(size: 12))
+                                                .foregroundStyle(Color.red.opacity(0.7))
+                                        }
+                                    }
+                                    Spacer()
+                                }
+                                .padding(12)
+                                .background(Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+                            } else {
+                                PhotosPicker(
+                                    selection: $selectedPhoto,
+                                    matching: .images,
+                                    photoLibrary: .shared()
+                                ) {
+                                    HStack(spacing: 10) {
+                                        Image(systemName: "camera.fill")
+                                            .font(.system(size: 15))
+                                        Text("Attach Receipt Photo")
+                                            .font(.system(size: 14, weight: .semibold))
+                                    }
+                                    .foregroundStyle(Color.atlasBlack.opacity(0.6))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 16)
+                                    .background(Color.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .stroke(Color.atlasBlack.opacity(0.06), lineWidth: 1)
+                                    )
+                                }
+                                .onChange(of: selectedPhoto) { _, newItem in
+                                    Task {
+                                        if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                                            receiptImageData = data
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            Button { showPaywall = true } label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: "lock.fill")
+                                        .font(.system(size: 13))
+                                    Text("Upgrade to Pro to attach receipts")
+                                        .font(.system(size: 13, weight: .medium))
+                                }
+                                .foregroundStyle(Color.atlasBlack.opacity(0.35))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color.white.opacity(0.5))
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
                     // Date
                     VStack(spacing: 8) {
                         Text("Date")
@@ -633,6 +857,12 @@ struct AddExpenseView: View {
         }
         .background(Color.atlasBeige.ignoresSafeArea())
         .onAppear { amountFocused = true }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environment(subscriptionManager)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
+        }
     }
 
     private func saveExpense() {
@@ -642,6 +872,8 @@ struct AddExpenseView: View {
             note: note.trimmingCharacters(in: .whitespaces),
             category: selectedCategory,
             date: date,
+            paidByName: paidByName,
+            photoData: receiptImageData,
             trip: trip
         )
         modelContext.insert(expense)
