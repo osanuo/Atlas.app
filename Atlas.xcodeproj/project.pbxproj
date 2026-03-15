@@ -10,8 +10,6 @@
 		6FA42B872F66B13100590FE5 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6FA42B862F66B13100590FE5 /* WidgetKit.framework */; };
 		6FA42B892F66B13100590FE5 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6FA42B882F66B13100590FE5 /* SwiftUI.framework */; };
 		6FA42B9A2F66B13300590FE5 /* AtlasWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 6FA42B842F66B13100590FE5 /* AtlasWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		E8D4EA679BCE459894C52A4C /* AtlasWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A240D0A2560B42C18CBF0058 /* AtlasWidget.swift */; };
-		C0A1B2C3D4E5F6A7B8C9D0F1 /* ShareExtensionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A1B2C3D4E5F6A7B8C9D0E1 /* ShareExtensionViewController.swift */; };
 		C0A1B2C3D4E5F6A7B8C9D0F2 /* AtlasShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C0A1B2C3D4E5F6A7B8C9D0E4 /* AtlasShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -53,11 +51,8 @@
 		6FA42B862F66B13100590FE5 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		6FA42B882F66B13100590FE5 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		6FA42BA12F66B17700590FE5 /* AtlasWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AtlasWidgetExtension.entitlements; sourceTree = "<group>"; };
-		A240D0A2560B42C18CBF0058 /* AtlasWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AtlasWidget.swift; sourceTree = "<group>"; };
-		B5B9FF93F52547F2A8E9C88C /* AtlasWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AtlasWidget.entitlements; sourceTree = "<group>"; };
-		C0A1B2C3D4E5F6A7B8C9D0E1 /* ShareExtensionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareExtensionViewController.swift; sourceTree = "<group>"; };
-		C0A1B2C3D4E5F6A7B8C9D0E2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C0A1B2C3D4E5F6A7B8C9D0E3 /* AtlasShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AtlasShareExtension.entitlements; sourceTree = "<group>"; };
+		B5B9FF93F52547F2A8E9C88C /* AtlasWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AtlasWidget/AtlasWidget.entitlements; sourceTree = "<group>"; };
+		C0A1B2C3D4E5F6A7B8C9D0E3 /* AtlasShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AtlasShareExtension/AtlasShareExtension.entitlements; sourceTree = "<group>"; };
 		C0A1B2C3D4E5F6A7B8C9D0E4 /* AtlasShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AtlasShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -322,7 +317,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E8D4EA679BCE459894C52A4C /* AtlasWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -330,7 +324,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C0A1B2C3D4E5F6A7B8C9D0F1 /* ShareExtensionViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
