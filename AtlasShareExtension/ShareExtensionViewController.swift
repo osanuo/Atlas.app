@@ -20,6 +20,32 @@ struct PendingShareItem: Codable {
     let tripID: String?
     let categoryRaw: String?
     let dateAdded: Date
+    var address: String?      // pre-filled from schema.org; nil = not found
+
+    // Custom decoder so older queue items (without `address`) still parse fine
+    init(from decoder: Decoder) throws {
+        let c       = try decoder.container(keyedBy: CodingKeys.self)
+        id          = try c.decode(String.self, forKey: .id)
+        title       = try c.decode(String.self, forKey: .title)
+        urlString   = try c.decode(String.self, forKey: .urlString)
+        destination = try c.decode(String.self, forKey: .destination)
+        tripID      = try c.decodeIfPresent(String.self, forKey: .tripID)
+        categoryRaw = try c.decodeIfPresent(String.self, forKey: .categoryRaw)
+        dateAdded   = try c.decode(Date.self, forKey: .dateAdded)
+        address     = try c.decodeIfPresent(String.self, forKey: .address)
+    }
+
+    init(id: String, title: String, urlString: String, destination: String,
+         tripID: String?, categoryRaw: String?, dateAdded: Date, address: String? = nil) {
+        self.id          = id
+        self.title       = title
+        self.urlString   = urlString
+        self.destination = destination
+        self.tripID      = tripID
+        self.categoryRaw = categoryRaw
+        self.dateAdded   = dateAdded
+        self.address     = address
+    }
 }
 
 struct SharedTrip: Codable {
@@ -105,10 +131,12 @@ struct ShareExtensionView: View {
 
     @State private var title: String
     @State private var selectedTripID: String? = nil
-    @State private var selectedCategory: String = "places"
+    @State private var selectedCategory: String
     @State private var saveMode: SaveMode
     @State private var isPro: Bool
     @State private var sharedTrips: [SharedTrip] = []
+    @State private var locationAddress: String = ""
+    @State private var isFetchingAddress: Bool = false
 
     enum SaveMode: CaseIterable, Hashable { case trip, wishlist }
 
@@ -145,10 +173,12 @@ struct ShareExtensionView: View {
         self.urlString    = urlString
         self.onSave       = onSave
         self.onCancel     = onCancel
-        _title   = State(initialValue: initialTitle)
-        let pro  = UserDefaults(suiteName: "group.com.osanuo.Atlas")?.bool(forKey: "atlas_isPro") ?? false
-        _isPro   = State(initialValue: pro)
-        _saveMode = State(initialValue: pro ? .trip : .wishlist)
+        _title            = State(initialValue: initialTitle)
+        let pro           = UserDefaults(suiteName: "group.com.osanuo.Atlas")?.bool(forKey: "atlas_isPro") ?? false
+        _isPro            = State(initialValue: pro)
+        _saveMode         = State(initialValue: pro ? .trip : .wishlist)
+        // Auto-detect category from page title + URL before first render
+        _selectedCategory = State(initialValue: Self.detectCategory(title: initialTitle, urlString: urlString))
     }
 
     var body: some View {
@@ -158,6 +188,7 @@ struct ShareExtensionView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     titleSection
                     if !urlString.isEmpty { urlSection }
+                    addressSection
                     if isPro {
                         modeToggle
                         if saveMode == .trip {
@@ -180,6 +211,7 @@ struct ShareExtensionView: View {
         }
         .background(Self.beige.ignoresSafeArea())
         .onAppear { loadTrips() }
+        .task { await fetchPageMetadata() }
     }
 
     // MARK: - Sub-views
@@ -208,6 +240,25 @@ struct ShareExtensionView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
+        }
+    }
+
+    private var addressSection: some View {
+        fieldCard(label: "LOCATION") {
+            if isFetchingAddress {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.75)
+                        .tint(Self.teal)
+                    Text("Finding address…")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                TextField("Address / Location (optional)", text: $locationAddress)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Self.dark)
+            }
         }
     }
 
@@ -457,6 +508,7 @@ struct ShareExtensionView: View {
 
     private func commitSave() {
         let trimmed = title.trimmingCharacters(in: .whitespaces)
+        let addr    = locationAddress.trimmingCharacters(in: .whitespaces)
         let item = PendingShareItem(
             id:          UUID().uuidString,
             title:       trimmed.isEmpty ? urlString : trimmed,
@@ -464,8 +516,109 @@ struct ShareExtensionView: View {
             destination: saveMode == .trip ? "trip" : "wishlist",
             tripID:      saveMode == .trip ? selectedTripID : nil,
             categoryRaw: saveMode == .trip ? selectedCategory : nil,
-            dateAdded:   Date()
+            dateAdded:   Date(),
+            address:     addr.isEmpty ? nil : addr
         )
         onSave(item)
+    }
+
+    // MARK: - Category Auto-Detection
+
+    /// Infers a category raw value from page title + URL without any network call.
+    private static func detectCategory(title: String, urlString: String) -> String {
+        let combined = (title + " " + urlString).lowercased()
+
+        let restaurantTerms = ["restaurant", "café", "cafe", "bistro", "brasserie",
+                               "eatery", "dining", "cuisine", "gastronomic",
+                               "gastronomique", "trattoria", "osteria", "pizzeria",
+                               "sushi", "ramen", "tapas", "boulangerie", "patisserie",
+                               "grill", "tavern", "bisto"]
+        let hotelTerms      = ["hotel", "hostel", "resort", "lodge",
+                               "accommodation", "suites", "auberge", "airbnb"]
+        let activityTerms   = ["museum", "musée", "gallery", "galerie",
+                               "tour ", "ticket", "concert", "exhibition",
+                               "show ", "theatre", "theater", "attraction",
+                               "experience", "activity"]
+
+        if restaurantTerms.contains(where: { combined.contains($0) }) { return "restaurants" }
+        if hotelTerms.contains(where: { combined.contains($0) })      { return "accommodation" }
+        if activityTerms.contains(where: { combined.contains($0) })   { return "paidActivities" }
+        return "places"
+    }
+
+    // MARK: - Schema.org Address Fetch
+
+    /// Fetches the shared page and extracts a physical address from JSON-LD markup.
+    private func fetchPageMetadata() async {
+        guard !urlString.isEmpty, let url = URL(string: urlString) else { return }
+        await MainActor.run { isFetchingAddress = true }
+        defer { Task { @MainActor in isFetchingAddress = false } }
+
+        var request = URLRequest(url: url, timeoutInterval: 7)
+        request.setValue(
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+            forHTTPHeaderField: "User-Agent"
+        )
+
+        guard let (data, _) = try? await URLSession.shared.data(for: request),
+              let html = String(data: data, encoding: .utf8)
+                      ?? String(data: data, encoding: .isoLatin1)
+        else { return }
+
+        if let address = extractSchemaOrgAddress(from: html) {
+            await MainActor.run { locationAddress = address }
+        }
+    }
+
+    private func extractSchemaOrgAddress(from html: String) -> String? {
+        let pattern = #"<script[^>]+type\s*=\s*["']application/ld\+json["'][^>]*>([\s\S]*?)</script>"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) else { return nil }
+
+        let ns      = html as NSString
+        let matches = regex.matches(in: html, range: NSRange(location: 0, length: ns.length))
+
+        for match in matches {
+            guard match.numberOfRanges > 1 else { continue }
+            let r = match.range(at: 1)
+            guard r.location != NSNotFound else { continue }
+            let jsonStr = ns.substring(with: r)
+
+            guard let jsonData = jsonStr.data(using: .utf8),
+                  let obj = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
+            else { continue }
+
+            // Accept any local-business / place type
+            let typeStr = obj["@type"] as? String ?? ""
+            let typeArr = (obj["@type"] as? [String]) ?? (typeStr.isEmpty ? [] : [typeStr])
+            let placeTypes = ["restaurant", "localbusiness", "foodestablishment",
+                              "hotel", "lodgingbusiness", "touristattraction",
+                              "museum", "bar", "cafe", "bakery"]
+            let isPlace = typeArr.contains(where: { t in
+                placeTypes.contains(where: { t.lowercased().contains($0) })
+            })
+            guard isPlace else { continue }
+
+            if let address = formatAddress(from: obj["address"]) {
+                return address
+            }
+        }
+        return nil
+    }
+
+    private func formatAddress(from raw: Any?) -> String? {
+        guard let raw else { return nil }
+        if let str = raw as? String, !str.isEmpty { return str }
+        if let dict = raw as? [String: Any] {
+            let street   = dict["streetAddress"]   as? String ?? ""
+            let locality = dict["addressLocality"]  as? String ?? ""
+            let postal   = dict["postalCode"]        as? String ?? ""
+            let country  = dict["addressCountry"]    as? String ?? ""
+            let parts = [street, postal.isEmpty ? locality : "\(postal) \(locality)", country]
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+            let result = parts.joined(separator: ", ")
+            return result.isEmpty ? nil : result
+        }
+        return nil
     }
 }

@@ -158,6 +158,7 @@ struct AtlasApp: App {
                         url:      item.urlString,
                         trip:     trip
                     )
+                    tripItem.locationAddress = item.address ?? ""
                     ctx.insert(tripItem)
                 }
             }
@@ -209,6 +210,20 @@ struct PendingShareItem: Codable {
     let tripID: String?
     let categoryRaw: String?
     let dateAdded: Date
+    var address: String?      // pre-filled from schema.org; nil = not found
+
+    // Custom decoder for backward-compat (old items lack `address` key)
+    init(from decoder: Decoder) throws {
+        let c       = try decoder.container(keyedBy: CodingKeys.self)
+        id          = try c.decode(String.self, forKey: .id)
+        title       = try c.decode(String.self, forKey: .title)
+        urlString   = try c.decode(String.self, forKey: .urlString)
+        destination = try c.decode(String.self, forKey: .destination)
+        tripID      = try c.decodeIfPresent(String.self, forKey: .tripID)
+        categoryRaw = try c.decodeIfPresent(String.self, forKey: .categoryRaw)
+        dateAdded   = try c.decode(Date.self, forKey: .dateAdded)
+        address     = try c.decodeIfPresent(String.self, forKey: .address)
+    }
 }
 
 /// Lightweight trip descriptor serialised into the App Group so the share
