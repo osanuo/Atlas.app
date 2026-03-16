@@ -183,8 +183,13 @@ final class SubscriptionManager {
 #if DEBUG
     func toggleDevPro() {
         let current = UserDefaults.standard.bool(forKey: "atlas_devProOverride")
-        UserDefaults.standard.set(!current, forKey: "atlas_devProOverride")
-        isPro = !current
+        let next = !current
+        UserDefaults.standard.set(next, forKey: "atlas_devProOverride")
+        UserDefaults.standard.set(next, forKey: "atlas_isPro")
+        // Mirror to App Group so Share Extension + Widget pick it up immediately
+        let shared = UserDefaults(suiteName: "group.com.osanuo.Atlas")
+        shared?.set(next, forKey: "atlas_isPro")
+        isPro = next
     }
 #endif
 }
