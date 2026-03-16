@@ -592,6 +592,7 @@ struct ItineraryItemPickerView: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .environment(\.colorScheme, .light)
     }
 
     private func assign(item: TripItem) {

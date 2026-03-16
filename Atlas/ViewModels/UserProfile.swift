@@ -205,6 +205,7 @@ final class UserProfile {
             .sorted { $0.dateVisited! < $1.dateVisited! }
 
         var totalMeters = 0.0
+        guard datedPins.count >= 2 else { totalKm = 0; return }
         for i in 1..<datedPins.count {
             let from = CLLocation(latitude: datedPins[i - 1].latitude,
                                   longitude: datedPins[i - 1].longitude)

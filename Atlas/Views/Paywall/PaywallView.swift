@@ -286,8 +286,7 @@ struct ProFeature: Identifiable {
         .init(id: "receipt", icon: "camera.circle.fill",    title: "Receipt Photos",          subtitle: "Attach photos to expenses for easy tracking"),
         .init(id: "split",   icon: "equal.circle.fill",     title: "Expense Splitting",       subtitle: "Split costs evenly across your crew"),
         .init(id: "pdf",     icon: "doc.circle.fill",       title: "PDF Export",              subtitle: "Export a printable day-by-day itinerary"),
-        .init(id: "widget",  icon: "rectangle.stack.badge.plus", title: "Countdown Widget",   subtitle: "\"X days to Tokyo\" on your Home Screen"),
-        .init(id: "clip",    icon: "safari",                title: "Web Clip to Atlas",       subtitle: "Save restaurants & hotels from Safari instantly"),
+.init(id: "clip",    icon: "safari",                title: "Web Clip to Atlas",       subtitle: "Save restaurants & hotels from Safari instantly"),
     ]
 }
 

@@ -21,11 +21,6 @@ struct TripsView: View {
             .sorted { $0.startDate < $1.startDate }
     }
 
-    private var pastTrips: [Trip] {
-        trips.filter { $0.status == .completed }
-            .sorted { $0.endDate > $1.endDate }
-    }
-
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
@@ -50,14 +45,8 @@ struct TripsView: View {
                                 .padding(.horizontal, 20)
                         }
 
-                        // Past trips
-                        if !pastTrips.isEmpty {
-                            pastSection
-                                .padding(.horizontal, 20)
-                        }
-
                         // Empty state
-                        if trips.isEmpty {
+                        if activeTrip == nil && upcomingTrips.isEmpty {
                             emptyState
                                 .padding(.horizontal, 20)
                         }
@@ -171,35 +160,6 @@ struct TripsView: View {
                     .contextMenu {
                         Button("Archive Trip") {
                             withAnimation { trip.status = .completed }
-                            Haptics.medium()
-                        }
-                        Button("Delete Trip", role: .destructive) {
-                            tripToDelete = trip
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Past Trips
-
-    private var pastSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Past Trips")
-                .atlasLabel()
-
-            LazyVStack(spacing: 8) {
-                ForEach(pastTrips) { trip in
-                    Button {
-                        selectedTrip = trip
-                    } label: {
-                        PastTripRow(trip: trip)
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
-                        Button("Restore to Planning") {
-                            withAnimation { trip.status = .planning }
                             Haptics.medium()
                         }
                         Button("Delete Trip", role: .destructive) {

@@ -61,12 +61,17 @@ struct FlapBoardView: View {
     var body: some View {
         HStack(spacing: spacing) {
             ForEach(Array(displayedChars.enumerated()), id: \.offset) { index, char in
-                FlapCharView(
-                    char: char,
-                    light: light,
-                    fontSize: fontSize,
-                    isFlipping: flipping[safe: index] ?? false
-                )
+                if char == " " {
+                    // Render spaces as a half-width gap, not a tile
+                    Color.clear.frame(width: fontSize * 0.55, height: fontSize * 1.55)
+                } else {
+                    FlapCharView(
+                        char: char,
+                        light: light,
+                        fontSize: fontSize,
+                        isFlipping: flipping[safe: index] ?? false
+                    )
+                }
             }
         }
         .onAppear {

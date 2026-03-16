@@ -62,7 +62,7 @@ struct WishlistView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 24)
-                .padding(.bottom, 100)
+                .padding(.bottom, 130)
                 .background(Color.atlasBeige)
             }
         }
@@ -219,6 +219,16 @@ private struct WishlistCard: View {
     let onMarkVisited: () -> Void
     let onDelete: () -> Void
 
+    /// Scale the FlapBoard font down for long city names so tiles never overflow the card.
+    /// Available width for the FlapBoard ≈ card width − card padding − overlay padding − Plan Trip button ≈ 212 pt.
+    /// Each tile is (fontSize × 1.1) wide; spaces are (fontSize × 0.55); inter-tile spacing is 1 pt.
+    private var cityFontSize: CGFloat {
+        let letters = destination.city.filter { $0 != " " }.count
+        if letters <= 9  { return 22 }
+        if letters <= 12 { return 17 }
+        return 14
+    }
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
             // Background image or gradient placeholder
@@ -329,7 +339,7 @@ private struct WishlistCard: View {
         HStack(alignment: .bottom, spacing: 12) {
             // Left column: city tiles + country/notes — always anchored to leading edge
             VStack(alignment: .leading, spacing: 6) {
-                FlapBoardView(text: destination.city, fontSize: 22)
+                FlapBoardView(text: destination.city, fontSize: cityFontSize)
 
                 HStack(spacing: 6) {
                     Text(destination.country)

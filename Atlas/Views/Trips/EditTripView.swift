@@ -268,6 +268,7 @@ struct EditTripView: View {
                     .foregroundStyle(Color.atlasBlack.opacity(0.4))
                 TextField("e.g. Tokyo Adventure", text: $tripName)
                     .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Color.atlasBlack)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
@@ -292,6 +293,7 @@ struct EditTripView: View {
                     .padding(.top, 2)
                 TextField("Trip notes, reminders, packing ideas…", text: $notes, axis: .vertical)
                     .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Color.atlasBlack)
                     .lineLimit(3...6)
             }
             .padding(.horizontal, 16)

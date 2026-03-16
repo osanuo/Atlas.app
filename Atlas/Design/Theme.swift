@@ -105,7 +105,7 @@ struct AtlasLabelModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(Color.atlasBlack.opacity(0.4))
+            .foregroundStyle(Color.atlasBlack.opacity(0.6))
             .textCase(.uppercase)
             .kerning(2.0)
     }

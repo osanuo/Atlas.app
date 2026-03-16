@@ -440,7 +440,7 @@ struct ShareExtensionView: View {
                 .foregroundStyle(Self.dark)
             Text("With Pro you can clip any web page directly into your trip planning list — restaurants, hotels, activities and more.")
                 .font(.system(size: 13))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color(white: 0.45))
                 .multilineTextAlignment(.center)
         }
         .padding(20)
@@ -493,7 +493,7 @@ struct ShareExtensionView: View {
         Text(text)
             .font(.system(size: 10, weight: .semibold))
             .kerning(0.8)
-            .foregroundStyle(Color.secondary)
+            .foregroundStyle(Color(white: 0.35))
     }
 
     private func loadTrips() {

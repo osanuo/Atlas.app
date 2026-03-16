@@ -14,6 +14,10 @@ struct ProfileView: View {
 
     @State private var selectedPhoto: PhotosPickerItem? = nil
     @State private var showPaywall = false
+    @State private var travelLogExpanded = false
+    @State private var isEditingName = false
+    @State private var nameInput = ""
+    @FocusState private var nameFocused: Bool
 
     @Query(
         filter: #Predicate<Trip> { $0.statusRaw == "completed" },
@@ -161,9 +165,40 @@ struct ProfileView: View {
 
             Spacer().frame(height: 12)
 
-            Text(userProfile.displayName)
-                .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(.white)
+            if isEditingName {
+                HStack(spacing: 8) {
+                    TextField("Your name", text: $nameInput)
+                        .font(.system(size: 26, weight: .bold))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .focused($nameFocused)
+                        .onSubmit { commitName() }
+                    Button { commitName() } label: {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundStyle(.white)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 32)
+            } else {
+                Button {
+                    nameInput = userProfile.displayName
+                    isEditingName = true
+                    nameFocused = true
+                    Haptics.light()
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(userProfile.displayName)
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundStyle(.white)
+                        Image(systemName: "pencil")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                }
+                .buttonStyle(.plain)
+            }
 
             Text("GLOBAL ENTRY ID: \(userProfile.entryId)")
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
@@ -265,6 +300,16 @@ struct ProfileView: View {
         .padding(.top, 8)
     }
 
+    private func commitName() {
+        let trimmed = nameInput.trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty {
+            userProfile.displayName = trimmed
+        }
+        isEditingName = false
+        nameFocused = false
+        Haptics.success()
+    }
+
     private func featureChip(icon: String, label: String) -> some View {
         VStack(spacing: 5) {
             Image(systemName: icon)
@@ -338,8 +383,24 @@ struct ProfileView: View {
             if completedTrips.isEmpty {
                 emptyTravelLog
             } else {
-                ForEach(completedTrips) { trip in
+                let visible = travelLogExpanded ? completedTrips : Array(completedTrips.prefix(3))
+                ForEach(visible) { trip in
                     TravelLogRow(trip: trip)
+                }
+                if completedTrips.count > 3 {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) { travelLogExpanded.toggle() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text(travelLogExpanded ? "Show less" : "Show all \(completedTrips.count) trips")
+                                .font(.system(size: 13, weight: .medium))
+                            Image(systemName: travelLogExpanded ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.atlasTeal)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                    }
                 }
             }
         }
@@ -470,11 +531,14 @@ struct ProfileView: View {
                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
                     .foregroundStyle(Color.atlasBlack.opacity(0.35))
                 Group {
-                    debugSeedLine("🇯🇵 Tokyo Adventure — active, $2,400 budget, 3 crew, 10 items + expenses")
-                    debugSeedLine("🇫🇷 Paris Getaway — planning, $1,800 budget, 1 crew, 8 items")
-                    debugSeedLine("🇩🇪 Berlin Techno — completed, $600 budget (over!), 5 items + expenses")
-                    debugSeedLine("🇯🇵 Kyoto Sakura — confirmed, $1,600 budget, 2 crew, 6 items with addresses")
-                    debugSeedLine("❤️  6 wishlist destinations (1 already visited)")
+                    debugSeedLine("🇯🇵 Tokyo Adventure — active, $2,400, 3 crew, 12 items w/ itinerary")
+                    debugSeedLine("🇫🇷 Paris Getaway — planning, $1,800, 2 crew, 10 items + deposits")
+                    debugSeedLine("🇪🇸 Marbella Summer — planning, $2,200, 3 crew, 7 items")
+                    debugSeedLine("🇯🇵 Kyoto Sakura — confirmed, $1,600, 1 crew, 8 items")
+                    debugSeedLine("🇳🇱 Amsterdam — completed, $900, 7 items + expenses")
+                    debugSeedLine("🇩🇪 Berlin Techno — completed, $600 (over!), 6 items + expenses")
+                    debugSeedLine("🗺️  8 map pins — 6 countries across 3 continents")
+                    debugSeedLine("❤️  8 wishlist destinations (1 already visited)")
                 }
             }
             .padding(12)
