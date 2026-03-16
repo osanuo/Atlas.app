@@ -11,6 +11,9 @@ struct ContentView: View {
     @State private var selectedTab = 0
     @State private var showNewTrip = false
     @State private var showPaywall = false
+    @State private var deepLinkedTrip: Trip? = nil
+
+    private var networkMonitor = NetworkMonitor.shared
 
     @Environment(\.modelContext) private var modelContext
     @Environment(SubscriptionManager.self) private var subscriptionManager
@@ -67,6 +70,13 @@ struct ContentView: View {
                 }
             }
 
+            // Offline banner — slides in above the tab bar
+            if !networkMonitor.isConnected {
+                offlineBanner
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(1)
+            }
+
             // Custom floating center + button
             Button {
                 handleNewTrip()
@@ -109,8 +119,18 @@ struct ContentView: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.hidden)
         }
+        .animation(.easeInOut(duration: 0.3), value: networkMonitor.isConnected)
         .onAppear {
             configureTabBar()
+        }
+        // Deep link handling — from widget or other atlas:// URLs
+        .onOpenURL { url in
+            handleDeepLink(url)
+        }
+        .sheet(item: $deepLinkedTrip) { trip in
+            NavigationStack {
+                TripDetailView(trip: trip)
+            }
         }
         // When the app foregrounds, pull fresh changes for all shared trips.
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
@@ -120,6 +140,52 @@ struct ContentView: View {
                     try? await CloudKitSharingManager.shared.fetchChanges(for: trip, in: modelContext)
                 }
             }
+        }
+        // Keep the share-extension trip list up-to-date in the App Group.
+        .onChange(of: allTrips) { _, trips in
+            AtlasApp.syncTripsToSharedDefaults(trips)
+        }
+        .onAppear {
+            AtlasApp.syncTripsToSharedDefaults(allTrips)
+        }
+    }
+
+    // MARK: - Offline Banner
+
+    private var offlineBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "wifi.slash")
+                .font(.system(size: 12, weight: .semibold))
+            Text("No internet connection")
+                .font(.system(size: 12, weight: .semibold))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Color.atlasBlack.opacity(0.85))
+        .clipShape(Capsule())
+        .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+        .padding(.bottom, 90) // above tab bar
+    }
+
+    // MARK: - Deep Link Handler
+
+    private func handleDeepLink(_ url: URL) {
+        guard url.scheme == "atlas" else { return }
+        switch url.host {
+        case "trip":
+            // atlas://trip/{uuid}
+            let tripIDString = url.pathComponents.dropFirst().first ?? ""
+            if let trip = allTrips.first(where: { $0.id.uuidString == tripIDString }) {
+                selectedTab = 0
+                deepLinkedTrip = trip
+            }
+        case "trips":
+            selectedTab = 0
+        case "paywall":
+            showPaywall = true
+        default:
+            break
         }
     }
 
@@ -139,5 +205,5 @@ struct ContentView: View {
     ContentView()
         .environment(UserProfile.shared)
         .environment(SubscriptionManager.shared)
-        .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self], inMemory: true)
+        .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self, VisitedLocation.self], inMemory: true)
 }

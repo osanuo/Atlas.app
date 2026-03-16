@@ -8,6 +8,8 @@
 import SwiftUI
 import Observation
 import CloudKit
+import SwiftData
+import CoreLocation
 
 @Observable
 final class UserProfile {
@@ -25,8 +27,9 @@ final class UserProfile {
         didSet { UserDefaults.standard.set(totalCountries, forKey: "atlas_totalCountries") }
     }
 
-    var totalMiles: Int {
-        didSet { UserDefaults.standard.set(totalMiles, forKey: "atlas_totalMiles") }
+    /// Stored in kilometres; converted for display based on device locale.
+    var totalKm: Int {
+        didSet { UserDefaults.standard.set(totalKm, forKey: "atlas_totalKm") }
     }
 
     var entryId: String {
@@ -75,7 +78,12 @@ final class UserProfile {
         self.displayName    = d.string(forKey: "atlas_displayName") ?? "Traveler"
         self.totalTrips     = d.integer(forKey: "atlas_totalTrips")
         self.totalCountries = d.integer(forKey: "atlas_totalCountries")
-        self.totalMiles     = d.integer(forKey: "atlas_totalMiles")
+        // Migrate legacy "atlas_totalMiles" value on first launch if present.
+        if d.object(forKey: "atlas_totalKm") == nil, d.integer(forKey: "atlas_totalMiles") > 0 {
+            self.totalKm = Int(Double(d.integer(forKey: "atlas_totalMiles")) * 1.60934)
+        } else {
+            self.totalKm = d.integer(forKey: "atlas_totalKm")
+        }
         self.hasOnboarded         = d.bool(forKey: "atlas_hasOnboarded")
         self.currencyCode         = d.string(forKey: "atlas_currencyCode") ?? "USD"
         self.iCloudUserRecordID   = d.string(forKey: "atlas_icloudUserRecordID")
@@ -134,11 +142,18 @@ final class UserProfile {
         String(format: "%02d", totalCountries)
     }
 
-    var milesDisplay: String {
-        if totalMiles >= 1000 {
-            return "\(totalMiles / 1000)K"
-        }
-        return String(totalMiles)
+    /// "km" for metric locales, "Miles" for US/UK.
+    var distanceLabel: String {
+        Locale.current.usesMetricSystem ? "km" : "Miles"
+    }
+
+    var distanceDisplay: String {
+        let value = Locale.current.usesMetricSystem
+            ? totalKm
+            : Int((Double(totalKm) * 0.621371).rounded())
+        if value >= 1_000_000 { return "\(value / 1_000_000)M" }
+        if value >= 1000      { return "\(value / 1000)K" }
+        return String(value)
     }
 
     // MARK: - iCloud User Identity
@@ -159,14 +174,44 @@ final class UserProfile {
         }
     }
 
-    // MARK: - Update from trips
+    // MARK: - Update from trips + map pins
 
-    func syncStats(from trips: [Trip]) {
+    func syncStats(from trips: [Trip], mapPins: [VisitedLocation] = [], isPro: Bool = false) {
         let completed = trips.filter { $0.status == .completed }
         totalTrips = completed.count
 
-        // Count unique destinations (simple approximation)
-        let destinations = Set(completed.map { $0.destination.lowercased() })
-        totalCountries = max(destinations.count, totalCountries)
+        // ── Countries ─────────────────────────────────────────────────────────
+        // Use the stored country field; fall back to destination name for old entries.
+        var countries = Set(
+            completed.map { trip -> String in
+                let c = trip.country.trimmingCharacters(in: .whitespaces)
+                return c.isEmpty ? trip.destination.lowercased() : c.lowercased()
+            }.filter { !$0.isEmpty }
+        )
+        if isPro {
+            for pin in mapPins {
+                let c = pin.country.trimmingCharacters(in: .whitespaces)
+                if !c.isEmpty { countries.insert(c.lowercased()) }
+            }
+        }
+        totalCountries = countries.count
+
+        // ── Distance ──────────────────────────────────────────────────────────
+        // Sort dated pins chronologically and sum great-circle distances between
+        // consecutive locations — this approximates the user's total air travel path.
+        // Undated pins are excluded because their temporal order is unknown.
+        let datedPins = mapPins
+            .filter { $0.dateVisited != nil }
+            .sorted { $0.dateVisited! < $1.dateVisited! }
+
+        var totalMeters = 0.0
+        for i in 1..<datedPins.count {
+            let from = CLLocation(latitude: datedPins[i - 1].latitude,
+                                  longitude: datedPins[i - 1].longitude)
+            let to   = CLLocation(latitude: datedPins[i].latitude,
+                                  longitude: datedPins[i].longitude)
+            totalMeters += from.distance(from: to)
+        }
+        totalKm = Int((totalMeters / 1000).rounded())
     }
 }

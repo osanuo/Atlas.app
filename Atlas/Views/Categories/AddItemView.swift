@@ -214,4 +214,5 @@ private struct CategoryChip: View {
 
 #Preview {
     AddItemView(trip: nil, defaultCategory: .restaurants)
+        .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self, VisitedLocation.self], inMemory: true)
 }

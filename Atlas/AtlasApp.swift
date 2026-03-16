@@ -134,7 +134,7 @@ struct AtlasApp: App {
 
         for item in items {
             if item.destination == "wishlist" {
-                // Save as a Wishlist destination, using title as city and URL as notes/imageURL
+                // Free-tier path: save as a Wishlist destination
                 let dest = WishlistDestination(
                     city: item.title,
                     country: "",
@@ -143,9 +143,10 @@ struct AtlasApp: App {
                 )
                 ctx.insert(dest)
 
-            } else if item.destination == "collection",
+            } else if (item.destination == "trip" || item.destination == "collection"),
                       let tripIDString = item.tripID {
-                // Find the target trip then append a TripItem to it
+                // Pro path: clip directly into a specific trip
+                // ("collection" kept for backward-compat with older extension builds)
                 let descriptor = FetchDescriptor<Trip>()
                 let allTrips   = (try? ctx.fetch(descriptor)) ?? []
                 if let trip = allTrips.first(where: { $0.id.uuidString == tripIDString }) {
@@ -165,6 +166,24 @@ struct AtlasApp: App {
         try? ctx.save()
     }
 
+    /// Writes a lightweight list of planning/active trips to the shared App Group
+    /// so the Share Extension can display them without accessing SwiftData.
+    /// Call whenever the trip list changes (ContentView onChange) or on foreground.
+    static func syncTripsToSharedDefaults(_ trips: [Trip]) {
+        let relevant = trips.filter { $0.statusRaw == "planning" || $0.statusRaw == "active" }
+        let shared   = relevant.map {
+            SharedTrip(
+                id:          $0.id.uuidString,
+                name:        $0.name,
+                destination: $0.destination,
+                emoji:       $0.destinationFlag,
+                status:      $0.statusRaw
+            )
+        }
+        guard let encoded = try? JSONEncoder().encode(shared) else { return }
+        UserDefaults(suiteName: "group.com.osanuo.Atlas")?.set(encoded, forKey: "atlas_sharedTrips")
+    }
+
     nonisolated private static func destroyDefaultStore() {
         guard let appSupport = FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
@@ -179,17 +198,27 @@ struct AtlasApp: App {
     }
 }
 
-// MARK: - Pending Share Item (mirrors AtlasShareExtension/ShareExtensionViewController.swift)
-// Keep both definitions in sync whenever fields are added.
+// MARK: - Shared Models (mirror AtlasShareExtension/ShareExtensionViewController.swift)
+// Keep both definitions in sync whenever fields are added or renamed.
 
 struct PendingShareItem: Codable {
     let id: String
     let title: String
     let urlString: String
-    let destination: String        // "wishlist" or "collection"
-    let tripID: String?            // UUID string, if destination == "collection"
-    let categoryRaw: String?       // ItemCategory.rawValue
+    let destination: String   // "trip" | "wishlist"  (legacy: "collection")
+    let tripID: String?
+    let categoryRaw: String?
     let dateAdded: Date
+}
+
+/// Lightweight trip descriptor serialised into the App Group so the share
+/// extension (which cannot access SwiftData) can display the user's trips.
+struct SharedTrip: Codable {
+    let id: String
+    let name: String
+    let destination: String
+    let emoji: String
+    let status: String            // "planning" | "active" | "completed"
 }
 
 // MARK: - Launch Screen
@@ -198,14 +227,17 @@ struct LaunchView: View {
     var body: some View {
         ZStack {
             Color.atlasTeal.ignoresSafeArea()
-            VStack(spacing: 16) {
-                Image(systemName: "airplane")
-                    .font(.system(size: 48, weight: .bold))
-                    .foregroundStyle(.white)
-                Text("ATLAS")
-                    .font(.system(size: 32, weight: .bold, design: .monospaced))
-                    .foregroundStyle(.white)
-                    .kerning(8)
+            VStack(spacing: 24) {
+                // App icon from dedicated imageset (works on device + Simulator)
+                Image("AtlasAppIcon")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 96, height: 96)
+                    .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+                    .shadow(color: .black.opacity(0.22), radius: 14, x: 0, y: 6)
+
+                // Flapboard "ATLAS" with staggered flip-in animation
+                FlapBoardView(text: "ATLAS", fontSize: 30, spacing: 4)
             }
         }
     }

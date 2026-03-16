@@ -373,5 +373,5 @@ struct ItemDetailView: View {
         priority: .mustDo
     )
     ItemDetailView(item: item)
-        .modelContainer(for: [Trip.self, TripItem.self], inMemory: true)
+        .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self, VisitedLocation.self], inMemory: true)
 }

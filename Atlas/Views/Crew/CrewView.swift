@@ -229,6 +229,9 @@ struct FilterChip: View {
 
 struct InviteCrewView: View {
     let trips: [Trip]
+    /// When set, the member is auto-assigned here and the trip picker is hidden.
+    var preassignedTrip: Trip? = nil
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
@@ -244,7 +247,8 @@ struct InviteCrewView: View {
                     TextField("Full Name", text: $name)
                 }
 
-                if !trips.isEmpty {
+                // Show trip picker only when not pre-assigned to a specific trip
+                if preassignedTrip == nil && !trips.isEmpty {
                     Section("Assign to Trip") {
                         Picker("Trip", selection: $selectedTrip) {
                             Text("None").tag(Optional<Trip>.none)
@@ -252,6 +256,13 @@ struct InviteCrewView: View {
                                 Text(trip.destination).tag(Optional(trip))
                             }
                         }
+                    }
+                }
+
+                if let trip = preassignedTrip {
+                    Section("Trip") {
+                        Label(trip.destination, systemImage: "airplane")
+                            .foregroundStyle(Color.atlasTeal)
                     }
                 }
 
@@ -281,14 +292,15 @@ struct InviteCrewView: View {
     }
 
     private func addMember() {
+        let targetTrip = preassignedTrip ?? selectedTrip ?? trips.first
         let member = CrewMember(
             name: name.trimmingCharacters(in: .whitespaces),
             status: status,
             flightInfo: flightInfo,
-            trip: selectedTrip ?? trips.first
+            trip: targetTrip
         )
         modelContext.insert(member)
-        if let trip = selectedTrip ?? trips.first {
+        if let trip = targetTrip {
             trip.crew.append(member)
         }
         Haptics.success()
@@ -298,5 +310,5 @@ struct InviteCrewView: View {
 
 #Preview {
     CrewView()
-        .modelContainer(for: [Trip.self, CrewMember.self], inMemory: true)
+        .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self, VisitedLocation.self], inMemory: true)
 }

@@ -673,5 +673,5 @@ struct EditTripView: View {
         status: .planning,
         travelerCount: 3
     ))
-    .modelContainer(for: Trip.self, inMemory: true)
+    .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self, VisitedLocation.self], inMemory: true)
 }

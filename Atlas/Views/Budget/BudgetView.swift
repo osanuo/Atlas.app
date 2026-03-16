@@ -824,6 +824,7 @@ struct AddExpenseView: View {
                                 .datePickerStyle(.compact)
                                 .labelsHidden()
                                 .tint(Color.atlasTeal)
+                                .environment(\.colorScheme, .light)
                             Spacer()
                         }
                         .padding(16)

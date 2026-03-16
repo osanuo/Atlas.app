@@ -569,5 +569,6 @@ private struct ShareLinkSheet: UIViewControllerRepresentable {
         endDate: Date().addingTimeInterval(86400 * 10),
         cardColorHex: "FCDA85"
     ))
-    .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self], inMemory: true)
+    .environment(SubscriptionManager.shared)
+    .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self, VisitedLocation.self], inMemory: true)
 }

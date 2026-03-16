@@ -91,9 +91,17 @@ struct WishlistView: View {
                 .presentationDragIndicator(.hidden)
         }
         .sheet(item: $planningDestination) { destination in
-            NewTripView(initialDestination: destination.city)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.hidden)
+            NewTripView(
+                initialDestination: destination.city,
+                onTripCreated: {
+                    withAnimation(.easeInOut(duration: 0.35)) {
+                        modelContext.delete(destination)
+                    }
+                    Haptics.medium()
+                }
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.hidden)
         }
         // After the sheet fully closes, forcibly kill any lingering keyboard.
         // onDismiss fires too early (mid-animation), so a short delay is needed.

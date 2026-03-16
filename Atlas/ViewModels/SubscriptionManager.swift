@@ -149,13 +149,33 @@ final class SubscriptionManager {
     var monthlyProduct: Product? { products.first(where: { $0.id == Self.monthlyID }) }
     var annualProduct:  Product? { products.first(where: { $0.id == Self.annualID }) }
 
-    /// Percentage saved by choosing annual over 12× monthly (0–99)
-    var annualSavingsPercent: Int? {
+    /// Formatted dollar amount saved by choosing annual over 12× monthly (e.g. "$34.89")
+    var annualSavingsDollars: String? {
         guard let m = monthlyProduct, let a = annualProduct, m.price > 0 else { return nil }
         let annualEquivalent = m.price * 12
         guard annualEquivalent > a.price else { return nil }
-        let savings = (annualEquivalent - a.price) / annualEquivalent
-        return Int((savings * 100).rounded())
+        let savings = annualEquivalent - a.price
+        return savings.formatted(m.priceFormatStyle)
+    }
+
+    /// True when the annual product has a free-trial introductory offer configured in App Store Connect.
+    var annualHasTrial: Bool {
+        annualProduct?.subscription?.introductoryOffer?.paymentMode == .freeTrial
+    }
+
+    /// Human-readable trial duration string, e.g. "7-day" (derived from the StoreKit offer period).
+    var annualTrialLabel: String {
+        guard
+            let offer = annualProduct?.subscription?.introductoryOffer,
+            offer.paymentMode == .freeTrial
+        else { return "7-day" }
+        let value = offer.period.value
+        switch offer.period.unit {
+        case .day:   return "\(value)-day"
+        case .week:  return "\(value)-week"
+        case .month: return "\(value)-month"
+        default:     return "\(value)-day"
+        }
     }
 
     // MARK: - Dev Toggle (DEBUG only)

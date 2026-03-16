@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 // MARK: - Destination Model
 
@@ -14,46 +15,63 @@ private struct Destination: Identifiable {
     let price: Int
     let bestSeason: String
     let imageURL: String
-    var isFavorited: Bool = false
 }
 
 // MARK: - Explore View
 
 struct ExploreView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query private var wishlist: [WishlistDestination]
+
     @State private var searchText = ""
-    @State private var destinations: [Destination] = [
-        Destination(
-            city: "SHIBUYA",
-            country: "Japan",
-            price: 1240,
-            bestSeason: "Oct-Nov",
-            imageURL: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&q=80&w=800"
-        ),
-        Destination(
-            city: "PARIS",
-            country: "France",
-            price: 980,
-            bestSeason: "Apr-Jun",
-            imageURL: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=800"
-        ),
-        Destination(
-            city: "REYKJAVIK",
-            country: "Iceland",
-            price: 1100,
-            bestSeason: "Sep-Mar",
-            imageURL: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=800"
-        ),
+
+    private let allDestinations: [Destination] = [
+        Destination(city: "SHIBUYA",    country: "Japan",       price: 1240, bestSeason: "Oct–Nov", imageURL: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&q=80&w=800"),
+        Destination(city: "PARIS",      country: "France",      price: 980,  bestSeason: "Apr–Jun", imageURL: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&q=80&w=800"),
+        Destination(city: "REYKJAVIK",  country: "Iceland",     price: 1100, bestSeason: "Sep–Mar", imageURL: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=800"),
+        Destination(city: "BALI",       country: "Indonesia",   price: 860,  bestSeason: "May–Sep", imageURL: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&q=80&w=800"),
+        Destination(city: "NEW YORK",   country: "USA",         price: 1350, bestSeason: "Sep–Nov", imageURL: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&q=80&w=800"),
+        Destination(city: "KYOTO",      country: "Japan",       price: 1100, bestSeason: "Mar–May", imageURL: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=80&w=800"),
+        Destination(city: "SANTORINI",  country: "Greece",      price: 1450, bestSeason: "Jun–Sep", imageURL: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&q=80&w=800"),
+        Destination(city: "MARRAKECH",  country: "Morocco",     price: 720,  bestSeason: "Mar–May", imageURL: "https://images.unsplash.com/photo-1539020140153-e479b8c22e70?auto=format&fit=crop&q=80&w=800"),
+        Destination(city: "BANGKOK",    country: "Thailand",    price: 780,  bestSeason: "Nov–Feb", imageURL: "https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&q=80&w=800"),
+        Destination(city: "LISBON",     country: "Portugal",    price: 890,  bestSeason: "Apr–Jun", imageURL: "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?auto=format&fit=crop&q=80&w=800"),
+        Destination(city: "CAPE TOWN",  country: "South Africa",price: 1050, bestSeason: "Nov–Feb", imageURL: "https://images.unsplash.com/photo-1580060839134-75a5edca2e99?auto=format&fit=crop&q=80&w=800"),
+        Destination(city: "DUBAI",      country: "UAE",         price: 1300, bestSeason: "Nov–Mar", imageURL: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&q=80&w=800"),
     ]
 
-    /// Indices into `destinations` that match the current search text.
-    /// Using indices (not a filtered copy) preserves the `@Binding` needed by ExploreCard.
-    private var filteredIndices: [Int] {
-        if searchText.isEmpty { return Array(destinations.indices) }
-        return destinations.indices.filter {
-            destinations[$0].city.localizedCaseInsensitiveContains(searchText) ||
-            destinations[$0].country.localizedCaseInsensitiveContains(searchText)
+    private var filtered: [Destination] {
+        if searchText.isEmpty { return allDestinations }
+        return allDestinations.filter {
+            $0.city.localizedCaseInsensitiveContains(searchText) ||
+            $0.country.localizedCaseInsensitiveContains(searchText)
         }
     }
+
+    // MARK: - Wishlist Helpers
+
+    private func isFavorited(_ destination: Destination) -> Bool {
+        wishlist.contains { $0.city.uppercased() == destination.city.uppercased() }
+    }
+
+    private func toggleFavorite(_ destination: Destination) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) {
+            if let existing = wishlist.first(where: { $0.city.uppercased() == destination.city.uppercased() }) {
+                modelContext.delete(existing)
+            } else {
+                let wish = WishlistDestination(
+                    city: destination.city,
+                    country: destination.country,
+                    notes: "Best season: \(destination.bestSeason)",
+                    imageURL: destination.imageURL
+                )
+                modelContext.insert(wish)
+            }
+        }
+        Haptics.light()
+    }
+
+    // MARK: - Body
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -64,20 +82,24 @@ struct ExploreView: View {
 
                 // MARK: Cards
                 VStack(spacing: 20) {
-                    if filteredIndices.isEmpty {
+                    if filtered.isEmpty {
                         VStack(spacing: 12) {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 36))
                                 .foregroundStyle(Color.atlasBlack.opacity(0.2))
-                            Text("No destinations match "\(searchText)"")
+                            Text("No destinations match \u{201C}\(searchText)\u{201D}")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundStyle(Color.atlasBlack.opacity(0.4))
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 60)
                     } else {
-                        ForEach(filteredIndices, id: \.self) { i in
-                            ExploreCard(destination: $destinations[i])
+                        ForEach(filtered) { dest in
+                            ExploreCard(
+                                destination: dest,
+                                isFavorited: isFavorited(dest),
+                                onToggle: { toggleFavorite(dest) }
+                            )
                         }
                     }
                 }
@@ -146,7 +168,9 @@ struct ExploreView: View {
 // MARK: - Explore Card
 
 private struct ExploreCard: View {
-    @Binding var destination: Destination
+    let destination: Destination
+    let isFavorited: Bool
+    let onToggle: () -> Void
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -159,7 +183,7 @@ private struct ExploreCard: View {
                         .scaledToFill()
                         .frame(height: 280)
                         .clipped()
-                case .failure(_):
+                case .failure:
                     imagePlaceholder
                 case .empty:
                     ZStack {
@@ -182,7 +206,7 @@ private struct ExploreCard: View {
             .frame(height: 280)
 
             // Price badge — top-right
-            Text("$\(destination.price.formatted())")
+            Text("~$\(destination.price.formatted())")
                 .font(.system(size: 14, weight: .heavy, design: .monospaced))
                 .foregroundStyle(Color.atlasBlack)
                 .padding(.horizontal, 14)
@@ -226,22 +250,15 @@ private struct ExploreCard: View {
 
             Spacer()
 
-            // Heart button (frosted glass)
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) {
-                    destination.isFavorited.toggle()
-                    Haptics.light()
-                }
-            } label: {
-                Image(systemName: destination.isFavorited ? "heart.fill" : "heart")
+            // Heart button — saves to Wishlist
+            Button(action: onToggle) {
+                Image(systemName: isFavorited ? "heart.fill" : "heart")
                     .font(.system(size: 18))
-                    .foregroundStyle(destination.isFavorited ? Color.red : Color.white)
+                    .foregroundStyle(isFavorited ? Color.red : Color.white)
                     .frame(width: 44, height: 44)
                     .background(.ultraThinMaterial)
                     .clipShape(Circle())
-                    .overlay(
-                        Circle().stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    )
+                    .overlay(Circle().stroke(Color.white.opacity(0.3), lineWidth: 1))
             }
             .buttonStyle(.plain)
         }
@@ -258,4 +275,5 @@ private struct ExploreCard: View {
 
 #Preview {
     ExploreView()
+        .modelContainer(for: [WishlistDestination.self], inMemory: true)
 }

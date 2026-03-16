@@ -76,6 +76,23 @@ struct PaywallView: View {
                     }
                     .buttonStyle(.plain)
 
+                    // MARK: Legal links
+                    HStack(spacing: 6) {
+                        Link("Terms of Use",
+                             destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.atlasTeal.opacity(0.8))
+
+                        Text("·")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Color.atlasBlack.opacity(0.25))
+
+                        // Privacy Policy placeholder — replace URL when ready
+                        Text("Privacy Policy")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.atlasBlack.opacity(0.25))
+                    }
+
                     // Legal note
                     Text("Subscription auto-renews unless cancelled at least 24 hours before the end of the current period. Manage or cancel anytime in App Store settings.")
                         .font(.system(size: 10))
@@ -111,46 +128,78 @@ struct PaywallView: View {
 
     private var purchaseSection: some View {
         VStack(spacing: 12) {
-            // Annual (highlighted)
+
+            // ── Annual — primary / highlighted ───────────────────────────────
             if let annual = subscriptionManager.annualProduct {
                 Button {
                     Task { await subscriptionManager.purchase(annual) }
                 } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            HStack(spacing: 6) {
-                                Text("Annual")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundStyle(.white)
-                                if let pct = subscriptionManager.annualSavingsPercent {
-                                    Text("SAVE \(pct)%")
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundStyle(Color.atlasBlack)
-                                        .padding(.horizontal, 7)
-                                        .padding(.vertical, 3)
-                                        .background(Color.atlasTeal)
-                                        .clipShape(Capsule())
+                    VStack(spacing: 0) {
+                        // Top row: plan name + savings badge
+                        HStack(alignment: .center, spacing: 8) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 8) {
+                                    Text("Annual")
+                                        .font(.system(size: 17, weight: .bold))
+                                        .foregroundStyle(.white)
+
+                                    if let saved = subscriptionManager.annualSavingsDollars {
+                                        Text("SAVE \(saved)")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundStyle(Color.atlasBlack)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 3)
+                                            .background(Color.atlasTeal)
+                                            .clipShape(Capsule())
+                                    }
+                                }
+
+                                // Price line + trial note
+                                if subscriptionManager.annualHasTrial {
+                                    Text("\(subscriptionManager.annualTrialLabel) free trial · then \(annual.displayPrice)/year")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(.white.opacity(0.6))
+                                } else {
+                                    Text(annual.displayPrice + " / year")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(.white.opacity(0.6))
                                 }
                             }
-                            Text(annual.displayPrice + " / year")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(.white.opacity(0.65))
+
+                            Spacer()
+
+                            if subscriptionManager.isLoading {
+                                ProgressView().tint(.white)
+                            } else {
+                                Text(subscriptionManager.annualHasTrial ? "Try Free" : "Subscribe")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundStyle(Color.atlasBlack)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 9)
+                                    .background(Color.atlasTeal)
+                                    .clipShape(Capsule())
+                            }
                         }
-                        Spacer()
-                        if subscriptionManager.isLoading {
-                            ProgressView().tint(.white)
-                        } else {
-                            Text("Subscribe")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.atlasTeal)
-                                .clipShape(Capsule())
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 18)
+
+                        // Trial call-out strip at the bottom of the card
+                        if subscriptionManager.annualHasTrial {
+                            Divider()
+                                .background(Color.white.opacity(0.1))
+
+                            HStack(spacing: 6) {
+                                Image(systemName: "gift.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(Color.atlasTeal)
+                                Text("Start your \(subscriptionManager.annualTrialLabel) free trial — cancel anytime")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.55))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 18)
                     .background(Color.atlasBlack)
                     .clipShape(RoundedRectangle(cornerRadius: 18))
                 }
@@ -158,19 +207,19 @@ struct PaywallView: View {
                 .disabled(subscriptionManager.isLoading)
             }
 
-            // Monthly
+            // ── Monthly — secondary ───────────────────────────────────────────
             if let monthly = subscriptionManager.monthlyProduct {
                 Button {
                     Task { await subscriptionManager.purchase(monthly) }
                 } label: {
                     HStack {
-                        VStack(alignment: .leading, spacing: 2) {
+                        VStack(alignment: .leading, spacing: 3) {
                             Text("Monthly")
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundStyle(Color.atlasBlack)
-                            Text(monthly.displayPrice + " / month")
+                            Text(monthly.displayPrice + " / month · no trial")
                                 .font(.system(size: 12, weight: .medium))
-                                .foregroundStyle(Color.atlasBlack.opacity(0.5))
+                                .foregroundStyle(Color.atlasBlack.opacity(0.45))
                         }
                         Spacer()
                         if subscriptionManager.isLoading {
@@ -180,8 +229,8 @@ struct PaywallView: View {
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundStyle(Color.atlasBlack)
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.atlasBlack.opacity(0.08))
+                                .padding(.vertical, 9)
+                                .background(Color.atlasBlack.opacity(0.07))
                                 .clipShape(Capsule())
                         }
                     }
@@ -191,18 +240,17 @@ struct PaywallView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 18))
                     .overlay(
                         RoundedRectangle(cornerRadius: 18)
-                            .stroke(Color.atlasBlack.opacity(0.08), lineWidth: 1)
+                            .stroke(Color.atlasBlack.opacity(0.07), lineWidth: 1)
                     )
                 }
                 .buttonStyle(ScaleButtonStyle())
                 .disabled(subscriptionManager.isLoading)
             }
 
-            // Loading state (no products fetched yet)
+            // ── Loading skeleton ──────────────────────────────────────────────
             if subscriptionManager.products.isEmpty {
                 VStack(spacing: 12) {
-                    ProgressView()
-                        .tint(Color.atlasTeal)
+                    ProgressView().tint(Color.atlasTeal)
                     Text("Loading prices…")
                         .font(.system(size: 12))
                         .foregroundStyle(Color.atlasBlack.opacity(0.4))
@@ -211,7 +259,7 @@ struct PaywallView: View {
                 .padding(.vertical, 32)
             }
 
-            // Error message
+            // ── Purchase error ────────────────────────────────────────────────
             if let err = subscriptionManager.purchaseError {
                 Text(err)
                     .font(.system(size: 12))

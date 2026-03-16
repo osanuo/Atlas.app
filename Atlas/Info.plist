@@ -2,6 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.osanuo.Atlas</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>atlas</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Used to set your profile photo, add destination images, and attach receipts to expenses.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

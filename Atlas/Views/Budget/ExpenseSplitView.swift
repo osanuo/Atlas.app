@@ -295,7 +295,7 @@ struct ExpenseSplitView: View {
     }
 
     private func computeSettlements() -> [Settlement] {
-        var balances = splits.map { ($0.name, $0.balance) }
+        let balances = splits.map { ($0.name, $0.balance) }
 
         var result: [Settlement] = []
         var debtors  = balances.filter { $0.1 < -0.005 }.sorted { $0.1 < $1.1 }

@@ -13,6 +13,7 @@ struct ProfileView: View {
     @Environment(SubscriptionManager.self) private var subscriptionManager
 
     @State private var selectedPhoto: PhotosPickerItem? = nil
+    @State private var showPaywall = false
 
     @Query(
         filter: #Predicate<Trip> { $0.statusRaw == "completed" },
@@ -21,6 +22,7 @@ struct ProfileView: View {
     ) private var completedTrips: [Trip]
 
     @Query private var allTrips: [Trip]
+    @Query private var visitedLocations: [VisitedLocation]
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -36,6 +38,12 @@ struct ProfileView: View {
                     // MARK: Stats Grid
                     statsGrid
                         .padding(.horizontal, 20)
+
+                    // MARK: Pro Upgrade Banner (non-Pro only)
+                    if !subscriptionManager.isPro {
+                        proUpgradeBanner
+                            .padding(.horizontal, 20)
+                    }
 
                     Spacer().frame(height: 32)
 
@@ -79,7 +87,13 @@ struct ProfileView: View {
         .background(Color.atlasBeige.ignoresSafeArea())
         .ignoresSafeArea(edges: .top)
         .onAppear {
-            userProfile.syncStats(from: allTrips)
+            userProfile.syncStats(from: allTrips, mapPins: visitedLocations, isPro: subscriptionManager.isPro)
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallView()
+                .environment(subscriptionManager)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.hidden)
         }
     }
 
@@ -168,8 +182,107 @@ struct ProfileView: View {
         HStack(spacing: 10) {
             StatCard(label: "Trips", value: userProfile.tripsDisplay)
             StatCard(label: "Countries", value: userProfile.countriesDisplay)
-            StatCard(label: "Miles", value: userProfile.milesDisplay)
+            StatCard(label: userProfile.distanceLabel, value: userProfile.distanceDisplay)
         }
+    }
+
+    // MARK: - Pro Upgrade Banner
+
+    private var proUpgradeBanner: some View {
+        VStack(spacing: 0) {
+
+            // ── Top: icon + headline ──────────────────────────────────────────
+            HStack(alignment: .center, spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(Color.atlasTeal.opacity(0.18))
+                        .frame(width: 54, height: 54)
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(Color.atlasTeal)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("ATLAS PRO")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundStyle(Color.atlasTeal)
+                        .kerning(1.5)
+                    Text("Plan Without Limits")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(.white)
+                    Text("Unlimited trips, Travel Map, Web Clips & more")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+            .padding(.bottom, 16)
+
+            // ── Separator ────────────────────────────────────────────────────
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 1)
+                .padding(.horizontal, 4)
+
+            // ── Feature chips ─────────────────────────────────────────────────
+            HStack(spacing: 6) {
+                featureChip(icon: "infinity",        label: "Unlimited")
+                featureChip(icon: "map",             label: "Travel Map")
+                featureChip(icon: "link",            label: "Web Clips")
+                featureChip(icon: "chart.bar",       label: "Budget")
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+
+            // ── CTA button ────────────────────────────────────────────────────
+            Button {
+                showPaywall = true
+                Haptics.medium()
+            } label: {
+                HStack(spacing: 8) {
+                    Text("Unlock Atlas Pro")
+                        .font(.system(size: 15, weight: .bold))
+                        .kerning(0.3)
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 13, weight: .bold))
+                }
+                .foregroundStyle(Color.atlasBlack)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Color.atlasTeal)
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .buttonStyle(ScaleButtonStyle())
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+        }
+        .background(Color.atlasBlack)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .shadow(color: Color.atlasBlack.opacity(0.18), radius: 14, x: 0, y: 6)
+        .padding(.top, 8)
+    }
+
+    private func featureChip(icon: String, label: String) -> some View {
+        VStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.atlasTeal)
+            Text(label)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.45))
+                .kerning(0.3)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(Color.white.opacity(0.05))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+        )
     }
 
     // MARK: - Currency Picker
@@ -286,7 +399,7 @@ struct ProfileView: View {
                 // Seed
                 Button {
                     DebugSeedService.seed(in: modelContext)
-                    userProfile.syncStats(from: allTrips)
+                    userProfile.syncStats(from: allTrips, mapPins: visitedLocations, isPro: subscriptionManager.isPro)
                     Haptics.success()
                 } label: {
                     HStack(spacing: 6) {
@@ -306,7 +419,7 @@ struct ProfileView: View {
                 // Clear
                 Button {
                     DebugSeedService.clearAll(in: modelContext)
-                    userProfile.syncStats(from: allTrips)
+                    userProfile.syncStats(from: allTrips, mapPins: visitedLocations, isPro: subscriptionManager.isPro)
                     Haptics.medium()
                 } label: {
                     HStack(spacing: 6) {
@@ -472,5 +585,6 @@ private struct TravelLogRow: View {
 #Preview {
     ProfileView()
         .environment(UserProfile.shared)
+        .environment(SubscriptionManager.shared)
         .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self, VisitedLocation.self], inMemory: true)
 }

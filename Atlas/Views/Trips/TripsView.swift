@@ -100,6 +100,7 @@ struct TripsView: View {
         shared?.set(nextTrip?.destinationFlag ?? "✈️", forKey: "widget_flag")
         shared?.set(nextTrip?.startDate, forKey: "widget_startDate")
         shared?.set(nextTrip?.name ?? "", forKey: "widget_tripName")
+        shared?.set(nextTrip?.id.uuidString ?? "", forKey: "widget_tripID")
     }
 
     // MARK: - Header
@@ -237,5 +238,7 @@ struct TripsView: View {
 
 #Preview {
     TripsView()
-        .modelContainer(for: Trip.self, inMemory: true)
+        .environment(UserProfile.shared)
+        .environment(SubscriptionManager.shared)
+        .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self, VisitedLocation.self], inMemory: true)
 }

@@ -80,24 +80,28 @@ private struct HeroPage: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                // Airplane icon
-                Image(systemName: "airplane")
-                    .font(.system(size: 72, weight: .ultraLight))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .scaleEffect(appeared ? 1.0 : 0.6)
-                    .opacity(appeared ? 1.0 : 0)
-                    .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: appeared)
+                // App icon
+                Group {
+                    if let uiIcon = UIImage(named: "AppIcon") {
+                        Image(uiImage: uiIcon)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 110, height: 110)
+                            .clipShape(RoundedRectangle(cornerRadius: 25, style: .continuous))
+                            .shadow(color: .black.opacity(0.25), radius: 16, x: 0, y: 8)
+                    }
+                }
+                .scaleEffect(appeared ? 1.0 : 0.6)
+                .opacity(appeared ? 1.0 : 0)
+                .animation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1), value: appeared)
 
                 Spacer().frame(height: 32)
 
-                // Atlas wordmark
-                Text("ATLAS")
-                    .font(.system(size: 52, weight: .bold, design: .monospaced))
-                    .foregroundStyle(.white)
-                    .kerning(10)
+                // Atlas wordmark — flapboard flip-in animation
+                FlapBoardView(text: "ATLAS", fontSize: 46, spacing: 5)
                     .offset(y: appeared ? 0 : 20)
                     .opacity(appeared ? 1.0 : 0)
-                    .animation(.easeOut(duration: 0.5).delay(0.25), value: appeared)
+                    .animation(.easeOut(duration: 0.01).delay(0.25), value: appeared)
 
                 Spacer().frame(height: 16)
 
@@ -147,10 +151,11 @@ private struct FeaturesPage: View {
     @State private var appeared = false
 
     private let features: [(icon: String, color: String, title: String, description: String)] = [
-        ("fork.knife",     "FF6B6B", "Trip Collections",      "Restaurants, stays, activities — every detail organized by category."),
-        ("calendar",       "4ECDC4", "Day-by-Day Itinerary",  "Morning, afternoon, evening — schedule your adventure hour by hour."),
-        ("person.2.fill",  "9B59B6", "Crew Manifest",         "Invite travel companions and track everyone's status in one place."),
-        ("globe",          "FFB84D", "Explore Destinations",  "Discover handpicked destinations and spark your next big trip.")
+        ("fork.knife",        "FF6B6B", "Trip Collections",    "Restaurants, hotels, activities — every detail organized by category with booking status."),
+        ("calendar",          "4ECDC4", "Day-by-Day Planner",  "Schedule morning, afternoon and evening slots for every day of your trip."),
+        ("creditcard.fill",   "FFB84D", "Budget & Expenses",   "Set a budget, log expenses with receipts and split costs across your crew."),
+        ("person.2.fill",     "9B59B6", "Crew & Sharing",      "Invite companions and plan together with live CloudKit collaboration."),
+        ("map.fill",          "5B8FF9", "Travel Map",          "Track every country you've visited and discover your next destination.")
     ]
 
     var body: some View {
@@ -164,7 +169,7 @@ private struct FeaturesPage: View {
 
                     VStack(alignment: .leading, spacing: 0) {
                         Spacer().frame(height: 70)
-                        Text("What's\nInside")
+                        Text("Everything\nyou need")
                             .font(.system(size: 36, weight: .bold))
                             .foregroundStyle(.white)
                             .lineSpacing(2)
@@ -180,46 +185,48 @@ private struct FeaturesPage: View {
                 .frame(height: 180)
 
                 // Feature list
-                VStack(spacing: 0) {
-                    Spacer().frame(height: 24)
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        Spacer().frame(height: 20)
 
-                    VStack(spacing: 14) {
-                        ForEach(Array(features.enumerated()), id: \.offset) { i, feature in
-                            FeatureRow(feature: feature)
-                                .offset(x: appeared ? 0 : 40)
-                                .opacity(appeared ? 1.0 : 0)
-                                .animation(
-                                    .spring(response: 0.5, dampingFraction: 0.8)
-                                    .delay(Double(i) * 0.1),
-                                    value: appeared
-                                )
+                        VStack(spacing: 10) {
+                            ForEach(Array(features.enumerated()), id: \.offset) { i, feature in
+                                FeatureRow(feature: feature)
+                                    .offset(x: appeared ? 0 : 40)
+                                    .opacity(appeared ? 1.0 : 0)
+                                    .animation(
+                                        .spring(response: 0.5, dampingFraction: 0.8)
+                                        .delay(Double(i) * 0.08),
+                                        value: appeared
+                                    )
+                            }
                         }
-                    }
-                    .padding(.horizontal, 24)
+                        .padding(.horizontal, 24)
 
-                    Spacer()
+                        Spacer().frame(height: 20)
 
-                    // Next button
-                    Button(action: onNext) {
-                        HStack(spacing: 10) {
-                            Text("CONTINUE")
-                                .font(.system(size: 14, weight: .bold))
-                                .kerning(1)
-                            Image(systemName: "arrow.right")
-                                .font(.system(size: 14, weight: .bold))
+                        // Next button
+                        Button(action: onNext) {
+                            HStack(spacing: 10) {
+                                Text("CONTINUE")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .kerning(1)
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 14, weight: .bold))
+                            }
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(Color.atlasBlack)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.atlasBlack)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                    .padding(.horizontal, 24)
-                    .opacity(appeared ? 1.0 : 0)
-                    .animation(.easeOut(duration: 0.4).delay(0.5), value: appeared)
+                        .buttonStyle(ScaleButtonStyle())
+                        .padding(.horizontal, 24)
+                        .opacity(appeared ? 1.0 : 0)
+                        .animation(.easeOut(duration: 0.4).delay(0.5), value: appeared)
 
-                    Spacer().frame(height: 100)
+                        Spacer().frame(height: 100)
+                    }
                 }
                 .background(Color.atlasBeige)
             }

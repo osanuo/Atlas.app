@@ -19,6 +19,7 @@ struct MapTabView: View {
     @State private var showAddLocationSheet = false
     @State private var showPaywall = false
     @State private var isSyncing = false
+    @State private var editingLocation: VisitedLocation? = nil
 
     @Query private var visitedLocations: [VisitedLocation]
 
@@ -29,9 +30,7 @@ struct MapTabView: View {
     ) private var completedTrips: [Trip]
 
     var body: some View {
-        ZStack {
-            Color.atlasBeige.ignoresSafeArea()
-
+        Group {
             if subscriptionManager.isPro {
                 proMapContent
             } else {
@@ -39,13 +38,15 @@ struct MapTabView: View {
             }
         }
         .sheet(isPresented: $showAddLocationSheet) {
-            AddVisitedLocationSheet { name, lat, lon, date in
+            AddVisitedLocationSheet { name, lat, lon, date, country, continent in
                 let loc = VisitedLocation(
                     name: name,
                     latitude: lat,
                     longitude: lon,
                     dateVisited: date,
-                    source: "manual"
+                    source: "manual",
+                    country: country,
+                    continent: continent
                 )
                 modelContext.insert(loc)
                 Haptics.success()
@@ -57,111 +58,283 @@ struct MapTabView: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.hidden)
         }
+        .sheet(item: $editingLocation) { loc in
+            EditVisitedLocationSheet(location: loc) {
+                modelContext.delete(loc)
+                Haptics.medium()
+            }
+        }
     }
 
     // MARK: - Pro Map Content
 
     private var proMapContent: some View {
-        VStack(spacing: 0) {
-            // Navigation-bar area
-            ZStack {
-                Color.atlasBlack.ignoresSafeArea(edges: .top)
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("TRAVEL MAP")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.white.opacity(0.45))
-                            .kerning(2)
-                        Text("\(visitedLocations.count) location\(visitedLocations.count == 1 ? "" : "s") pinned")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(.white)
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 0) {
+
+                // MARK: Teal Header
+                // The extra black background bridging fills the 40-pt corner-radius
+                // cutouts that would otherwise reveal the beige scroll background.
+                mapHeader
+                    .tealHeader()
+                    .background(alignment: .bottom) {
+                        Color.atlasBlack.frame(height: 42)
                     }
 
-                    Spacer()
+                // MARK: Globe (black background section)
+                ZStack(alignment: .center) {
+                    Color.atlasBlack
 
-                    HStack(spacing: 10) {
-                        // Sync completed trips
-                        if !completedTrips.isEmpty {
-                            Button {
-                                syncTripsToGlobe()
-                            } label: {
-                                HStack(spacing: 4) {
-                                    if isSyncing {
-                                        ProgressView().scaleEffect(0.75).tint(Color.atlasTeal)
-                                    } else {
-                                        Image(systemName: "arrow.clockwise")
-                                            .font(.system(size: 12, weight: .semibold))
-                                    }
-                                    Text(isSyncing ? "Syncing" : "Sync Trips")
-                                        .font(.system(size: 12, weight: .semibold))
-                                }
-                                .foregroundStyle(Color.atlasTeal)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(Color.atlasTeal.opacity(0.12))
-                                .clipShape(Capsule())
-                            }
-                            .disabled(isSyncing)
-                        }
+                    GlobeMapView(locations: visitedLocations)
+                        .frame(height: 380)
 
-                        // Add manual pin
-                        Button {
-                            showAddLocationSheet = true
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(width: 34, height: 34)
-                                .background(Color.white.opacity(0.15))
-                                .clipShape(Circle())
+                    if visitedLocations.isEmpty {
+                        VStack(spacing: 10) {
+                            Image(systemName: "mappin.slash")
+                                .font(.system(size: 24, weight: .light))
+                                .foregroundStyle(.white.opacity(0.6))
+                            Text("Sync completed trips or tap + to add your first pin")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.6))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 40)
                         }
+                        .padding(.vertical, 20)
+                        .background(Color.black.opacity(0.45).clipShape(RoundedRectangle(cornerRadius: 14)))
+                    }
+                }
+                .frame(height: 380)
+
+                // MARK: Legend
+                // frame(maxHeight: .infinity) ensures the beige background
+                // fills all remaining space even when the list is short.
+                VStack(alignment: .leading, spacing: 20) {
+                    if !visitedLocations.isEmpty {
+                        legendSection
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 8)
+                .padding(.top, 24)
+                .padding(.bottom, 100)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .background(Color.atlasBeige)
             }
-            .frame(height: 90)
+        }
+        .background(Color.atlasBeige.ignoresSafeArea())
+        .ignoresSafeArea(edges: .top)
+    }
 
-            // Full-height globe
-            GlobeMapView(locations: visitedLocations)
-                .ignoresSafeArea(edges: .bottom)
+    // MARK: - Header
 
-            // Empty state overlay (shown on top of map)
-            if visitedLocations.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "mappin.slash")
-                        .font(.system(size: 24, weight: .light))
-                        .foregroundStyle(.white.opacity(0.6))
-                    Text("Sync completed trips or tap + to add your first pin")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.6))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
+    private var mapHeader: some View {
+        VStack(spacing: 0) {
+            Spacer().frame(height: 60)
+
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Travel Map")
+                        .font(.system(size: 32, weight: .bold))
+                        .foregroundStyle(.white)
+                    Text(visitedLocations.isEmpty
+                         ? "Start pinning your world."
+                         : "\(visitedLocations.count) location\(visitedLocations.count == 1 ? "" : "s") pinned")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.65))
                 }
-                .padding(.vertical, 20)
-                .background(Color.black.opacity(0.45).clipShape(RoundedRectangle(cornerRadius: 14)))
-                .padding(.bottom, 120)
+
+                Spacer()
+
+                HStack(spacing: 10) {
+                    // Sync completed trips
+                    if !completedTrips.isEmpty {
+                        Button {
+                            syncTripsToGlobe()
+                        } label: {
+                            HStack(spacing: 4) {
+                                if isSyncing {
+                                    ProgressView()
+                                        .scaleEffect(0.75)
+                                        .tint(.white)
+                                } else {
+                                    Image(systemName: "arrow.clockwise")
+                                        .font(.system(size: 12, weight: .semibold))
+                                }
+                                Text(isSyncing ? "Syncing…" : "Sync Trips")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(Capsule())
+                        }
+                        .disabled(isSyncing)
+                    }
+
+                    // Add manual pin
+                    Button {
+                        showAddLocationSheet = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 34, height: 34)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(Circle())
+                    }
+                }
             }
+            .padding(.bottom, 24)
+        }
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - Legend
+
+    private var legendSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Where I've Been")
+                .atlasLabel()
+                .padding(.leading, 4)
+
+            // Group: continent → country → [city]
+            let grouped = groupedLocations()
+            ForEach(grouped, id: \.continent) { continentGroup in
+                VStack(alignment: .leading, spacing: 10) {
+                    // Continent header
+                    HStack(spacing: 8) {
+                        Text(continentGroup.continent)
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(Color.atlasBlack)
+                            .clipShape(Capsule())
+
+                        Text("\(continentGroup.totalCount) location\(continentGroup.totalCount == 1 ? "" : "s")")
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundStyle(Color.atlasBlack.opacity(0.4))
+                    }
+
+                    // Countries inside continent
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(continentGroup.countries, id: \.country) { countryGroup in
+                            HStack(alignment: .top, spacing: 0) {
+                                // Vertical connector line
+                                VStack(spacing: 0) {
+                                    Rectangle()
+                                        .fill(Color.atlasTeal.opacity(0.35))
+                                        .frame(width: 2)
+                                }
+                                .frame(width: 2)
+                                .padding(.leading, 12)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    // Country row
+                                    HStack(spacing: 6) {
+                                        Circle()
+                                            .fill(Color.atlasTeal)
+                                            .frame(width: 8, height: 8)
+                                            .padding(.leading, -5)
+
+                                        Text(countryGroup.country)
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundStyle(Color.atlasBlack)
+
+                                        Text("(\(countryGroup.locations.count))")
+                                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                            .foregroundStyle(Color.atlasBlack.opacity(0.4))
+                                    }
+
+                                    // Individual tappable location rows
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        ForEach(countryGroup.locations, id: \.id) { loc in
+                                            Button {
+                                                editingLocation = loc
+                                            } label: {
+                                                HStack(spacing: 6) {
+                                                    Text(loc.name)
+                                                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                                        .foregroundStyle(Color.atlasBlack.opacity(0.55))
+                                                    Spacer()
+                                                    Image(systemName: "pencil")
+                                                        .font(.system(size: 10, weight: .medium))
+                                                        .foregroundStyle(Color.atlasTeal.opacity(0.6))
+                                                }
+                                                .padding(.vertical, 4)
+                                                .padding(.horizontal, 8)
+                                                .background(Color.atlasBlack.opacity(0.03))
+                                                .clipShape(RoundedRectangle(cornerRadius: 6))
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                    .padding(.leading, 8)
+                                }
+                                .padding(.leading, 12)
+                                .padding(.vertical, 6)
+                            }
+                        }
+                    }
+                }
+                .padding(16)
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                )
+            }
+        }
+    }
+
+    // MARK: - Legend Data
+
+    private struct ContinentGroup {
+        let continent: String
+        let countries: [CountryGroup]
+        var totalCount: Int { countries.reduce(0) { $0 + $1.locations.count } }
+    }
+
+    private struct CountryGroup {
+        let country: String
+        let locations: [VisitedLocation]
+    }
+
+    private func groupedLocations() -> [ContinentGroup] {
+        var continentMap: [String: [String: [VisitedLocation]]] = [:]
+
+        for loc in visitedLocations {
+            let cont    = loc.continent.isEmpty ? "Other" : loc.continent
+            let country = loc.country.isEmpty   ? "Unknown" : loc.country
+            continentMap[cont, default: [:]][country, default: []].append(loc)
+        }
+
+        let continentOrder = ["Europe", "Asia", "Americas", "Africa", "Oceania", "Other"]
+
+        return continentOrder.compactMap { cont -> ContinentGroup? in
+            guard let countries = continentMap[cont] else { return nil }
+            let countryGroups = countries
+                .sorted { $0.key < $1.key }
+                .map { CountryGroup(country: $0.key, locations: $0.value.sorted { $0.name < $1.name }) }
+            return ContinentGroup(continent: cont, countries: countryGroups)
         }
     }
 
     // MARK: - Locked (Non-Pro) Content
 
     private var lockedMapContent: some View {
-        VStack(spacing: 0) {
-            // Blurred globe preview
-            ZStack {
-                // Static globe tint as backdrop (actual map blurred)
-                GlobeMapView(locations: [])
-                    .allowsHitTesting(false)
-                    .blur(radius: 14)
-                    .overlay(Color.atlasBlack.opacity(0.55))
+        ZStack {
+            GlobeMapView(locations: [])
+                .allowsHitTesting(false)
+                .blur(radius: 14)
+                .overlay(Color.atlasBlack.opacity(0.55))
+                .ignoresSafeArea()
 
-                ProLockOverlay(label: "Travel Map is a Pro feature") {
-                    showPaywall = true
-                }
+            ProLockOverlay(label: "Travel Map is a Pro feature") {
+                showPaywall = true
             }
-            .ignoresSafeArea(edges: .bottom)
         }
     }
 
@@ -187,14 +360,19 @@ struct MapTabView: View {
                     .filter { !$0.isEmpty }
                     .joined(separator: ", ")
 
-                if let coord = await geocodeAsync(query) {
+                if let (coord, placemark) = await geocodeWithPlacemark(query) {
+                    let country   = placemark.country ?? ""
+                    let isoCode   = placemark.isoCountryCode ?? ""
+                    let continent = continentFor(isoCode: isoCode)
                     await MainActor.run {
                         let loc = VisitedLocation(
                             name: trip.destination.capitalized,
                             latitude: coord.latitude,
                             longitude: coord.longitude,
                             dateVisited: trip.endDate,
-                            source: "trip"
+                            source: "trip",
+                            country: country,
+                            continent: continent
                         )
                         modelContext.insert(loc)
                     }
@@ -216,33 +394,38 @@ struct MapTabView: View {
             }
         }
     }
+
+    private func geocodeWithPlacemark(_ address: String) async -> (CLLocationCoordinate2D, CLPlacemark)? {
+        await withCheckedContinuation { continuation in
+            CLGeocoder().geocodeAddressString(address) { placemarks, _ in
+                if let pm = placemarks?.first, let coord = pm.location?.coordinate {
+                    continuation.resume(returning: (coord, pm))
+                } else {
+                    continuation.resume(returning: nil)
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Globe UIViewRepresentable
-// SwiftUI Map hard-caps zoom-out at ~8 000 km (continents only).
-// MKMapView lets us raise maxCenterCoordinateDistance to show the full globe.
 
 struct GlobeMapView: UIViewRepresentable {
     let locations: [VisitedLocation]
 
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
-
-        // MKHybridMapConfiguration is required for globe/space rendering.
         mapView.preferredConfiguration = MKHybridMapConfiguration(elevationStyle: .realistic)
-
         mapView.isScrollEnabled   = true
         mapView.isZoomEnabled     = true
         mapView.isRotateEnabled   = true
         mapView.isPitchEnabled    = false
-        mapView.showsCompass      = true
+        mapView.showsCompass      = false
         mapView.showsUserLocation = false
-
         mapView.cameraZoomRange = MKMapView.CameraZoomRange(
             minCenterCoordinateDistance: 500,
             maxCenterCoordinateDistance: CLLocationDistanceMax
         )
-
         let camera = MKMapCamera(
             lookingAtCenter: CLLocationCoordinate2D(latitude: 25, longitude: 10),
             fromDistance: 20_000_000,
@@ -258,7 +441,6 @@ struct GlobeMapView: UIViewRepresentable {
         let existing    = mapView.annotations.compactMap { $0 as? VisitedLocationAnnotation }
         let existingIDs = Set(existing.map(\.locationID))
         let newIDs      = Set(locations.map(\.id))
-
         mapView.removeAnnotations(existing.filter { !newIDs.contains($0.locationID) })
         for loc in locations where !existingIDs.contains(loc.id) {
             mapView.addAnnotation(VisitedLocationAnnotation(location: loc))
@@ -300,7 +482,8 @@ final class VisitedLocationAnnotation: NSObject, MKAnnotation {
 // MARK: - Add Visited Location Sheet
 
 struct AddVisitedLocationSheet: View {
-    let onAdd: (String, Double, Double, Date?) -> Void
+    /// name, lat, lon, date, country, continent
+    let onAdd: (String, Double, Double, Date?, String, String) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
@@ -318,7 +501,6 @@ struct AddVisitedLocationSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
-
             ZStack {
                 Color.atlasTeal
                 HStack {
@@ -381,15 +563,21 @@ struct AddVisitedLocationSheet: View {
                         }
 
                         if includeDate {
-                            DatePicker(
-                                "",
-                                selection: $dateVisited,
-                                in: ...Date(),
-                                displayedComponents: .date
-                            )
-                            .datePickerStyle(.compact)
-                            .tint(Color.atlasTeal)
-                            .labelsHidden()
+                            HStack {
+                                DatePicker(
+                                    "",
+                                    selection: $dateVisited,
+                                    in: ...Date(),
+                                    displayedComponents: .date
+                                )
+                                .datePickerStyle(.compact)
+                                .tint(Color.atlasTeal)
+                                .labelsHidden()
+                                // Force light-mode so the compact button text is always
+                                // dark on this white card regardless of system appearance.
+                                .environment(\.colorScheme, .light)
+                                Spacer()
+                            }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                             .background(Color.white)
@@ -455,15 +643,206 @@ struct AddVisitedLocationSheet: View {
             DispatchQueue.main.async {
                 isSearching = false
                 if let pm = placemarks?.first, let coord = pm.location?.coordinate {
-                    let parts = [pm.locality, pm.administrativeArea, pm.country].compactMap { $0 }
+                    let parts = [pm.locality, pm.administrativeArea, pm.country]
+                        .compactMap { $0 }
                     let displayName = parts.isEmpty ? query : parts.prefix(2).joined(separator: ", ")
-                    let date = includeDate ? dateVisited : nil
-                    onAdd(displayName, coord.latitude, coord.longitude, date)
+                    let country     = pm.country ?? ""
+                    let isoCode     = pm.isoCountryCode ?? ""
+                    let continent   = continentFor(isoCode: isoCode)
+                    let date        = includeDate ? dateVisited : nil
+                    onAdd(displayName, coord.latitude, coord.longitude, date, country, continent)
                     dismiss()
                 } else {
                     errorMessage = "Location not found. Try a more specific name."
                 }
             }
         }
+    }
+}
+
+// MARK: - Edit Visited Location Sheet
+
+struct EditVisitedLocationSheet: View {
+    let location: VisitedLocation
+    let onDelete: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var nameText: String
+    @State private var dateVisited: Date
+    @State private var includeDate: Bool
+    @State private var showDeleteConfirm = false
+
+    @FocusState private var nameFocused: Bool
+
+    init(location: VisitedLocation, onDelete: @escaping () -> Void) {
+        self.location = location
+        self.onDelete = onDelete
+        _nameText    = State(initialValue: location.name)
+        _dateVisited = State(initialValue: location.dateVisited ?? Date())
+        _includeDate = State(initialValue: location.dateVisited != nil)
+    }
+
+    private var hasChanges: Bool {
+        let nameTrimmed = nameText.trimmingCharacters(in: .whitespaces)
+        let nameDiffers = nameTrimmed != location.name && !nameTrimmed.isEmpty
+        let dateDiffers = includeDate
+            ? location.dateVisited.map { !Calendar.current.isDate($0, inSameDayAs: dateVisited) } ?? true
+            : location.dateVisited != nil
+        return nameDiffers || dateDiffers
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            ZStack {
+                Color.atlasTeal
+                HStack {
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 32, height: 32)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(Circle())
+                    }
+                    Spacer()
+                    Text("Edit Location")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Color.clear.frame(width: 32, height: 32)
+                }
+                .padding(.horizontal, 20)
+            }
+            .frame(height: 56)
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 20) {
+                    Spacer().frame(height: 8)
+
+                    // Name field
+                    VStack(spacing: 8) {
+                        Text("Location Name")
+                            .atlasLabel()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.leading, 4)
+
+                        TextField(
+                            "",
+                            text: $nameText,
+                            prompt: Text("e.g. Tokyo, Japan")
+                                .foregroundStyle(Color.atlasBlack.opacity(0.35))
+                        )
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.atlasBlack)
+                        .autocorrectionDisabled()
+                        .focused($nameFocused)
+                        .submitLabel(.done)
+                        .onSubmit { nameFocused = false }
+                        .padding(16)
+                        .background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+                    }
+
+                    // Date visited
+                    VStack(spacing: 8) {
+                        HStack {
+                            Text("Date Visited")
+                                .atlasLabel()
+                                .padding(.leading, 4)
+                            Spacer()
+                            Toggle("", isOn: $includeDate)
+                                .tint(Color.atlasTeal)
+                                .labelsHidden()
+                        }
+
+                        if includeDate {
+                            HStack {
+                                DatePicker(
+                                    "",
+                                    selection: $dateVisited,
+                                    in: ...Date(),
+                                    displayedComponents: .date
+                                )
+                                .datePickerStyle(.compact)
+                                .tint(Color.atlasTeal)
+                                .labelsHidden()
+                                .environment(\.colorScheme, .light)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .shadow(color: .black.opacity(0.04), radius: 4, x: 0, y: 2)
+                        }
+                    }
+
+                    // Save button
+                    Button { save() } label: {
+                        Text("SAVE CHANGES")
+                            .font(.system(size: 14, weight: .bold))
+                            .kerning(1)
+                            .foregroundStyle(hasChanges ? .white : Color.white.opacity(0.4))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 52)
+                            .background(hasChanges ? Color.atlasBlack : Color.atlasBlack.opacity(0.3))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .disabled(!hasChanges)
+
+                    // Remove pin button
+                    Button {
+                        showDeleteConfirm = true
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "mappin.slash")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text("Remove Pin")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.red.opacity(0.7))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(Color.red.opacity(0.06))
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.red.opacity(0.15), lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .confirmationDialog(
+                        "Remove \"\(location.name)\" from your map?",
+                        isPresented: $showDeleteConfirm,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Remove Pin", role: .destructive) {
+                            onDelete()
+                            dismiss()
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    }
+
+                    Spacer().frame(height: 16)
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+        .background(Color.atlasBeige.ignoresSafeArea())
+        .presentationDetents([.medium])
+        .onTapGesture { nameFocused = false }
+    }
+
+    private func save() {
+        let trimmed = nameText.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        location.name        = trimmed
+        location.dateVisited = includeDate ? dateVisited : nil
+        Haptics.success()
+        dismiss()
     }
 }

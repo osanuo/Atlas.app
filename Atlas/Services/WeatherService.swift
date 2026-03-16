@@ -67,7 +67,8 @@ struct WeatherDay: Identifiable {
 
 // MARK: - Weather Service
 
-actor WeatherService {
+@MainActor
+final class WeatherService {
 
     static let shared = WeatherService()
     private init() {}
@@ -84,7 +85,11 @@ actor WeatherService {
         endDate: Date
     ) async throws -> [WeatherDay] {
 
-        let cacheKey = "\(lat.rounded(toPlaces: 2)),\(lon.rounded(toPlaces: 2)),\(startDate.yyyyMMdd),\(endDate.yyyyMMdd)"
+        let startStr = dateString(from: startDate)
+        let endStr   = dateString(from: endDate)
+        let latR     = roundedToTwoPlaces(lat)
+        let lonR     = roundedToTwoPlaces(lon)
+        let cacheKey = "\(latR),\(lonR),\(startStr),\(endStr)"
 
         if let cached = cache[cacheKey], Date().timeIntervalSince(cached.fetched) < cacheTTL {
             return cached.days
@@ -96,14 +101,17 @@ actor WeatherService {
         let clampedEnd   = min(endDate, now.addingTimeInterval(86400 * 15))
         guard clampedStart <= clampedEnd else { return [] }
 
+        let clampedStartStr = dateString(from: clampedStart)
+        let clampedEndStr   = dateString(from: clampedEnd)
+
         var components = URLComponents(string: "https://api.open-meteo.com/v1/forecast")!
         components.queryItems = [
             .init(name: "latitude",    value: "\(lat)"),
             .init(name: "longitude",   value: "\(lon)"),
             .init(name: "daily",       value: "temperature_2m_max,temperature_2m_min,weathercode"),
             .init(name: "timezone",    value: "auto"),
-            .init(name: "start_date",  value: clampedStart.yyyyMMdd),
-            .init(name: "end_date",    value: clampedEnd.yyyyMMdd),
+            .init(name: "start_date",  value: clampedStartStr),
+            .init(name: "end_date",    value: clampedEndStr),
         ]
 
         let (data, _) = try await URLSession.shared.data(from: components.url!)
@@ -138,6 +146,20 @@ actor WeatherService {
             )
         }
     }
+
+    // MARK: - Helpers (inlined to avoid actor-isolation issues with extensions)
+
+    private func dateString(from date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.timeZone = TimeZone(secondsFromGMT: 0)
+        return f.string(from: date)
+    }
+
+    private func roundedToTwoPlaces(_ value: Double) -> Double {
+        let factor = 100.0
+        return (value * factor).rounded() / factor
+    }
 }
 
 // MARK: - API Response Models
@@ -157,23 +179,5 @@ private struct OpenMeteoResponse: Decodable {
             case temperature2mMin = "temperature_2m_min"
             case weathercode
         }
-    }
-}
-
-// MARK: - Helpers
-
-private extension Double {
-    func rounded(toPlaces places: Int) -> Double {
-        let factor = pow(10.0, Double(places))
-        return (self * factor).rounded() / factor
-    }
-}
-
-private extension Date {
-    var yyyyMMdd: String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.timeZone = TimeZone(secondsFromGMT: 0)
-        return f.string(from: self)
     }
 }

@@ -8,6 +8,7 @@ import SwiftData
 
 struct NewTripView: View {
     var initialDestination: String? = nil
+    var onTripCreated: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -412,6 +413,7 @@ struct NewTripView: View {
         )
 
         modelContext.insert(trip)
+        onTripCreated?()
         Haptics.success()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -638,5 +640,5 @@ struct DatePickerSheet: View {
 
 #Preview {
     NewTripView()
-        .modelContainer(for: Trip.self, inMemory: true)
+        .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self, VisitedLocation.self], inMemory: true)
 }

@@ -20,6 +20,7 @@ struct TripDetailView: View {
     @State private var showAddItem = false
     @State private var showEditTrip = false
     @State private var showShareTrip = false
+    @State private var showInviteCrew = false
     @State private var showPaywall = false
     @State private var pdfURL: URL?
     @State private var showPDFShare = false
@@ -89,7 +90,7 @@ struct TripDetailView: View {
                 Button {
                     Haptics.light()
                     if subscriptionManager.isPro {
-                        Task { await exportPDF() }
+                        exportPDF()
                     } else {
                         showPaywall = true
                     }
@@ -123,6 +124,10 @@ struct TripDetailView: View {
                 fabAddButton
                     .padding(.trailing, 24)
                     .padding(.bottom, 110)
+            } else if selectedTab == .crew {
+                fabInviteButton
+                    .padding(.trailing, 24)
+                    .padding(.bottom, 110)
             }
         }
         .sheet(isPresented: $showAddItem) {
@@ -135,6 +140,9 @@ struct TripDetailView: View {
             ShareTripView(trip: trip)
                 .environment(subscriptionManager)
                 .presentationDetents([.medium, .large])
+        }
+        .sheet(isPresented: $showInviteCrew) {
+            InviteCrewView(trips: [], preassignedTrip: trip)
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView()
@@ -342,6 +350,74 @@ struct TripDetailView: View {
         case .map:
             TripMapView(trip: trip)
                 .padding(.horizontal, 20)
+        case .crew:
+            crewTabContent
+                .padding(.horizontal, 20)
+        }
+    }
+
+    // MARK: - Crew Tab
+
+    private var crewTabContent: some View {
+        VStack(spacing: 10) {
+            // Invite card
+            Button {
+                showInviteCrew = true
+                Haptics.medium()
+            } label: {
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.atlasBlack)
+                            .frame(width: 40, height: 40)
+                        Image(systemName: "plus")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                    Text("Invite New Traveler")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Color.atlasBlack)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.atlasBlack.opacity(0.4))
+                }
+                .padding(16)
+                .background(Color.white.opacity(0.6))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .strokeBorder(
+                            style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])
+                        )
+                        .foregroundStyle(Color.atlasBlack.opacity(0.2))
+                )
+            }
+            .buttonStyle(.plain)
+
+            if trip.crew.isEmpty {
+                // Empty state
+                VStack(spacing: 12) {
+                    Image(systemName: "person.2.slash")
+                        .font(.system(size: 40))
+                        .foregroundStyle(Color.atlasBlack.opacity(0.2))
+                    Text("No crew members yet")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(Color.atlasBlack.opacity(0.4))
+                    Text("Invite people to plan this trip together")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.atlasBlack.opacity(0.3))
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 60)
+            } else {
+                LazyVStack(spacing: 10) {
+                    ForEach(trip.crew) { member in
+                        CrewMemberCard(member: member)
+                    }
+                }
+            }
         }
     }
 
@@ -398,11 +474,27 @@ struct TripDetailView: View {
         }
     }
 
+    // MARK: - FAB Invite Button (Crew tab)
+
+    private var fabInviteButton: some View {
+        Button {
+            showInviteCrew = true
+            Haptics.medium()
+        } label: {
+            Image(systemName: "person.badge.plus")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 52, height: 52)
+                .background(Color.atlasTeal)
+                .clipShape(Circle())
+                .shadow(color: Color.atlasTeal.opacity(0.4), radius: 8, x: 0, y: 4)
+        }
+    }
+
     // MARK: - PDF Export
 
-    @MainActor
-    private func exportPDF() async {
-        let url = await PDFExportService.shared.generateItinerary(for: trip, currencySymbol: userProfile.currencySymbol)
+    private func exportPDF() {
+        let url = PDFExportService.shared.generateItinerary(for: trip, currencySymbol: userProfile.currencySymbol)
         pdfURL = url
         showPDFShare = true
     }
@@ -411,13 +503,14 @@ struct TripDetailView: View {
 // MARK: - Trip Tab
 
 enum TripTab: CaseIterable {
-    case collections, itinerary, budget, map
+    case collections, itinerary, budget, map, crew
     var label: String {
         switch self {
-        case .collections: return "Collections"
+        case .collections: return "Places"
         case .itinerary:   return "Itinerary"
         case .budget:      return "Budget"
         case .map:         return "Map"
+        case .crew:        return "Crew"
         }
     }
 }
@@ -514,5 +607,5 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
     .environment(UserProfile.shared)
     .environment(SubscriptionManager.shared)
-    .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self], inMemory: true)
+    .modelContainer(for: [Trip.self, TripItem.self, CrewMember.self, Expense.self, WishlistDestination.self, VisitedLocation.self], inMemory: true)
 }
