@@ -395,6 +395,46 @@ struct TripDetailView: View {
             }
             .buttonStyle(.plain)
 
+            // Real-time collaboration card
+            Button {
+                showShareTrip = true
+                Haptics.medium()
+            } label: {
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.atlasTeal)
+                            .frame(width: 40, height: 40)
+                        Image(systemName: "person.2.wave.2")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Real-time Collaboration")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(Color.atlasTeal)
+                        Text("Share a link so crew can plan & edit together")
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(Color.atlasTeal.opacity(0.7))
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Color.atlasTeal.opacity(0.4))
+                }
+                .padding(16)
+                .background(Color.atlasTeal.opacity(0.06))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .strokeBorder(
+                            style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])
+                        )
+                        .foregroundStyle(Color.atlasTeal.opacity(0.35))
+                )
+            }
+            .buttonStyle(.plain)
+
             if trip.crew.isEmpty {
                 // Empty state
                 VStack(spacing: 12) {
