@@ -5,78 +5,91 @@ include_in_header: true
 ---
 
 ### `Latest`
-# Version 1.0 Release Notes
-## Welcome to Protagonist – Your Life Show 🎬
+# Version 1.0 — Launch Release
+## Welcome to Atlas ✈️
 **Version 1.0 – March 2026**
 
-We're thrilled to introduce Protagonist — a cinematic journaling app that turns your daily life into a TV show worth watching.
+Atlas is here. Plan trips. Track the world.
 
 ---
 
-### 🎬 Episode Logging
-- Log each day as an Episode with a title, description, and mood
-- Rate your mood with expressive faces
-- Add tags to your episodes
-- Star the moments worth remembering
-- Mark episodes as hidden to keep private moments out of view
+### ✈️ Trip Planning
+- Create trips with destination, dates, budget, and crew count
+- Add restaurants, hotels, activities, and transport — all categorized and tracked
+- Set booking status on each item (confirmed, pending, booked)
+- Assign priorities to items so nothing important gets lost
 
-### 📺 Seasons
-- Your life organises into Seasons (years) automatically
-- Browse every episode by month within each season
-- Customise each season with a unique colour theme
+### 📅 Day-by-Day Itinerary
+- Schedule items into morning, afternoon, or evening slots
+- View your full trip day by day — every slot filled at a glance
+- Re-assign items between days with ease
 
-### 🎉 Season Wrapped
-- At the close of every Season, swipe through a stunning animated recap
-- See your total episodes, mood journey, highlight reel, and best moments
-- Brought together like a real season finale
+### 💰 Budget & Expenses
+- Set a trip budget and log expenses as they happen
+- Full breakdown by category (Dining, Accommodation, Transport, Activities)
+- Per-person cost calculation based on your crew size
+- Attach receipt photos to expenses (Pro)
+- Split expenses evenly across your crew (Pro)
 
-### 📊 Stats That Tell Your Story
-- Total episodes logged and current streak
-- Your personal best streak
-- Mood heatmap — your entire year mapped day by day
-- 30-day mood trend chart and monthly mood averages
-- Best day, toughest day, and full streak history
-- Word cloud of your most-written themes
+### 👥 Crew & Collaboration
+- Add crew members with flight info and confirmation status
+- Invite crew to plan together in real time via iCloud CloudKit
+- Share a link or QR code for instant access
+- Real-time sync — changes appear on all crew devices automatically
 
-### 🎴 Share Your Moments
-- Export episodes as cinematic share cards
-- Four styles: Ticket, Clean, Minimal, and Retro Film
-- Share a full Season Recap with mood breakdown and highlights
-- Copy, save to Photos, or share anywhere
+### 🗺️ Travel Map (Pro)
+- Interactive globe showing every country and city you've visited
+- Sync completed trips automatically or add locations manually
+- Grouped legend by continent and country
+- Stats: total locations pinned, distance traveled
 
-### 🎟️ Director's Cut (Premium)
-Unlock the full story of your life:
-- **All Past Seasons** — never lose a chapter
-- **Deep Stats** — heatmap, mood trends, streak history & word cloud
-- **Season Themes** — personalise your colour palette each year
-- **Premium Share Cards** — Minimal, Retro Film & more styles
-- **Smart Reminders** — daily prompts & streak-rescue at 9pm
-- **Export** — PDF season book, CSV & JSON data backup
-- **Hidden Episodes** — keep private moments out of view
+### ❤️ Wishlist
+- Save dream destinations with photos, country flags, and notes
+- Search by city or country
+- Convert any wishlist item into a full trip plan instantly
+- Mark destinations as visited to track your progress
 
-Choose monthly, annual, or a one-time lifetime purchase.
+### 🔗 Safari Share Extension
+- Clip any restaurant, hotel, or activity from Safari into Atlas
+- Saves to your Wishlist (free) or directly into a trip collection (Pro)
+- Auto-detects category from the page content
 
-### 🔒 Core Features
-- Beautiful dark cinematic interface
-- Offline functionality — no internet required
-- Optional iCloud sync across all your Apple devices
-- No account required. No ads. No tracking.
-- Your data stays on your device
+### 📱 Home Screen Widget
+- Trip Countdown widget in small and medium sizes
+- Shows days until your next departure
+- Tap to open the trip directly in Atlas
+
+### 🔒 Privacy & Sync
+- All data synced via your private iCloud — no Atlas servers
+- Sign in with Apple — no password, no tracking
+- No ads. No third-party data sharing.
+
+### 🌟 Atlas Pro
+Unlock the full potential of your travels:
+- Unlimited active trips (free tier: 2 trips)
+- Travel Map with interactive globe
+- 10-day weather forecast for trip dates
+- Receipt photos on expenses
+- Expense splitting across crew
+- PDF itinerary export
+- Web Clip into trip collections (not just Wishlist)
+
+Available monthly or annually. Annual plan includes a 7-day free trial.
 
 ---
 
 ### COMING SOON
 - iPad support
-- Widgets
-- More share card styles
-- More languages
+- More widget sizes
+- Offline map integration
+- Packing list
 
 ---
 
 ### YOUR FEEDBACK MATTERS
 
-Protagonist is built for you. If you have suggestions, feature requests, or encounter any issues, please reach out at **osanuo.studio@gmail.com**
+Atlas is built for travelers like you. If you have suggestions, feature requests, or spot any issues, reach out at **osanuo.studio@gmail.com** — we read every message.
 
-Thank you for making Protagonist part of your story. You are the main character. 🎬
+Thank you for exploring the world with Atlas. ✈️
 
 <br>

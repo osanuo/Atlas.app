@@ -4,237 +4,179 @@ title: Terms of Service
 include_in_header: false
 ---
 
-# Terms of Service for Protagonist
+# Terms of Service for Atlas
 
-**Last Updated: March 1, 2026**
+**Last Updated: March 24, 2026**
 
 ## Agreement to Terms
 
-By downloading, installing, or using the Protagonist mobile application (the "App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the App.
+By downloading, installing, or using the Atlas mobile application (the "App"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree, do not use the App.
 
-**Developer**: Dawid (Osanuo)  
-**Location**: Warsaw, Poland  
+**Developer**: Dawid (Osanuo)
+**Location**: Warsaw, Poland
 **Contact**: osanuo.studio@gmail.com
+
+---
 
 ## Description of Service
 
-Protagonist is a life journaling application for iOS devices that helps users:
+Atlas is a travel planning application for iOS that helps users:
 
-- Log daily life as Episodes with titles, descriptions, mood ratings, and tags
-- Organise life into Seasons (years) and build a structured archive
-- Track mood trends, streaks, and personal statistics
-- Generate Season Wrapped recaps at the end of each season
-- Export episodes as cinematic share cards or full season recaps
-- Export data as PDF season books, CSV, or JSON backups
-- Optionally sync data across devices via iCloud
+- Plan trips with destinations, dates, budgets, and itineraries
+- Organize restaurants, hotels, activities, and transport by category
+- Track expenses and split costs across travel companions
+- Collaborate with crew members in real time via iCloud
+- Visualize visited countries and cities on an interactive travel map
+- Save wishlist destinations and clip web content from Safari
+- Export trip itineraries as PDF documents
+
+---
 
 ## Eligibility
 
-### Age Requirements
+- **European Union**: You must be at least 16 years old
+- **All other regions**: You must be at least 13 years old
 
-You must meet the minimum age requirement for your region:
+If you are under 18, you must have permission from a parent or legal guardian.
 
-- **European Union**: You must be at least 16 years old (or the minimum age required in your country under local law)
-- **Other regions**: You must be at least 13 years old
-
-If you are under 18 years of age, you must have permission from a parent or legal guardian to use the App.
-
-### Capacity to Agree
-
-By using the App, you represent and warrant that:
-- You meet the age requirement for your region
-- You have the legal capacity to enter into a binding contract
-- You have the right, authority, and capacity to enter into these Terms
-- You will use the App in compliance with these Terms and all applicable laws
+---
 
 ## License to Use
 
-### Grant of License
-
-Subject to your compliance with these Terms, we grant you a limited, non-exclusive, non-transferable, revocable license to:
-
-- Download and install the App on your iOS device(s)
-- Use the App for your personal, non-commercial purposes
-- Access and use the App's features and functionality
-
-### Restrictions
+We grant you a limited, non-exclusive, non-transferable, revocable license to download and use the App for personal, non-commercial purposes.
 
 You agree NOT to:
 
-- Copy, modify, adapt, or create derivative works of the App
-- Reverse engineer, decompile, disassemble, or attempt to discover the source code
-- Remove, alter, or obscure any copyright, trademark, or other proprietary notices
-- Use the App for any illegal, unauthorized, or commercial purpose
-- Attempt to gain unauthorized access to any portion of the App or its systems
-- Use the App in any way that could damage, disable, overburden, or impair the App
-- Resell, rent, lease, sublicense, or distribute the App
-- Use the App to violate any applicable laws or regulations
+- Copy, modify, or create derivative works of the App
+- Reverse engineer or attempt to extract the source code
+- Use the App for any illegal or unauthorized purpose
+- Resell, rent, or distribute the App
 
-## User-Generated Content
+---
 
-### Your Data
+## User Content
 
-You retain all ownership rights to the episodes, seasons, mood data, notes, and other content you create in the App ("User Content").
+You retain full ownership of all trip data, expense records, photos, and other content you create in Atlas ("User Content").
 
-By using the App, you grant us a limited license to:
-- Store your User Content locally on your device
-- Sync your User Content via iCloud (if you enable this feature)
-- Process your User Content to provide App functionality (calculate streaks, mood trends, Season Wrapped, etc.)
+By using the App, you grant us a limited license to process your User Content solely to provide App functionality (sync, collaboration, calculations). This license is non-exclusive, limited, and revocable by deleting your data or the App.
 
-This license is:
-- Non-exclusive (you can use your data elsewhere)
-- Limited to providing App functionality
-- Revocable (by deleting the App or your data)
+You are responsible for:
+- The accuracy and legality of your User Content
+- Any content shared with crew members you invite
+- Backing up your data
 
-### Responsibility for Your Content
+---
 
-You are solely responsible for:
-- The accuracy, legality, and appropriateness of your User Content
-- Backing up your data (we recommend using the export feature regularly)
-- Any consequences of sharing your episodes or season recaps with others
-- Any loss of your data
+## Atlas Pro — Subscriptions and Payments
 
-We are not responsible for:
-- Loss of data due to device failure, App deletion, iOS updates, or other causes
-- Backing up your data on our behalf
-- Recovering deleted episodes or seasons
-- The content of your User Content
+### Free Tier
 
-## Subscriptions and Payments
+Core features are available for free, including up to 2 active trips, trip collections, itinerary planning, basic expense tracking, Wishlist, and the home screen widget.
 
-### In-App Purchases
+### Atlas Pro
 
-Protagonist offers optional premium features ("Director's Cut") through in-app purchases:
+Atlas Pro is an optional subscription that unlocks:
 
-- **Free Features**: Core episode logging and season tracking is available for free
-- **Director's Cut**: Advanced features including All Past Seasons, Deep Stats, Season Themes, Premium Share Cards, Smart Reminders, Export, and Hidden Episodes
-- **Pricing**: Monthly ($3.99), Annual ($24.99), or Lifetime ($59.99) — current prices are displayed in the App and App Store
-- **Currency**: Prices are shown in your local currency
+- Unlimited active trips
+- Travel Map with interactive globe
+- 10-day weather forecast
+- Receipt photos on expenses
+- Expense splitting across crew
+- PDF itinerary export
+- Web Clip into trip collections from Safari
 
-### Billing and Payment Processing
+**Pricing**: Monthly ($4.99/month) or Annual ($24.99/year, includes 7-day free trial)
+
+Prices are shown in your local currency and are subject to change.
+
+### Billing
 
 - All purchases are processed through Apple's App Store
-- Billing is handled entirely by Apple Inc.
-- You are subject to Apple's payment terms and policies
-- We do not collect, process, or store your payment information
+- We do not collect or store your payment information
 - Payment disputes should be directed to Apple Support
 
 ### Subscriptions
 
-If you purchase a monthly or annual subscription:
+- **Auto-Renewal**: Subscriptions renew automatically unless cancelled at least 24 hours before the end of the billing period
+- **Cancellation**: Cancel anytime in your App Store account settings (Settings → [Your Name] → Subscriptions)
+- **Effect**: Cancellation takes effect at end of the current billing period; no partial refunds
 
-- **Auto-Renewal**: Subscriptions automatically renew at the end of each billing period unless cancelled
-- **Cancellation**: You can cancel anytime through your App Store account settings (Settings → [Your Name] → Subscriptions)
-- **Cancellation Effect**: Cancellation takes effect at the end of the current billing period
-- **No Partial Refunds**: Cancelling does not provide a refund for the current billing period
-- **Price Changes**: We reserve the right to change subscription pricing with at least 30 days' notice
+### Free Trial
 
-### Lifetime Purchase
-
-The Lifetime option is a one-time non-consumable purchase that provides permanent access to Director's Cut features for the current App version.
-
-### Free Trials
-
-If we offer a free trial period:
-
-- You must cancel before the trial period ends to avoid being charged
-- Only one free trial per user/account
-- Trial availability may vary by region
+The annual plan includes a 7-day free trial for new subscribers. Cancel before the trial ends to avoid being charged.
 
 ### Refunds
 
-Refund requests should be directed to Apple, as they process all payments:
+Refund requests must be directed to Apple. We cannot process refunds directly.
 
-- Contact Apple Support for refund requests
-- Refunds are subject to Apple's refund policy
-- We cannot process refunds directly
+---
 
 ## European Union Consumer Rights
 
-If you are located in the European Union, you have additional rights under EU consumer protection law:
+### Right of Withdrawal
 
-### Right of Withdrawal (14-Day Cooling-Off Period)
+For digital content, you have a 14-day withdrawal right from the date of purchase, unless you have started using premium features and explicitly agreed to immediate access.
 
-For digital content purchases (including subscriptions), you have the right to withdraw from your purchase within 14 days from the date of purchase, UNLESS you have already started using the premium features and explicitly agreed to immediate access.
+### EU Mandatory Rights
 
-### Refunds for EU Consumers
+Nothing in these Terms limits your mandatory rights under EU consumer protection law.
 
-EU consumers may be entitled to refunds under EU consumer protection law. To request a refund, contact Apple Support first. If unresolved, contact us at osanuo.studio@gmail.com or use the EU Online Dispute Resolution platform.
+### Dispute Resolution
 
-### Mandatory Consumer Rights
+EU consumers may use the European Commission's ODR platform:
+**https://ec.europa.eu/consumers/odr**
 
-Nothing in these Terms affects your mandatory consumer rights under EU law.
+---
 
-## Privacy and Data Protection
+## Privacy
 
-Your privacy is important to us. Our Privacy Policy explains what data we collect, how we use it, and your rights.
+Our Privacy Policy explains how we handle your data and is incorporated into these Terms by reference.
 
-**Please review our Privacy Policy at**: https://osanuo.github.io/Protagonist.app/privacypolicy/
+**Privacy Policy**: https://osanuo.github.io/Atlas.app/privacypolicy/
 
-The Privacy Policy is incorporated into these Terms by reference.
+---
 
 ## Intellectual Property
 
-The App, including all content, features, functionality, design, text, graphics, logos, and the "Protagonist" name and branding, is owned by us and protected by international copyright, trademark, and other intellectual property laws. You may not use our trademarks without our prior written permission.
+The App, including its name "Atlas," design, code, and branding, is owned by us and protected by copyright and intellectual property law. You may not use our trademarks without prior written permission.
 
-### Feedback
+---
 
-If you provide feedback or suggestions about the App, we may use your feedback without any obligation to you. We grant no compensation for feedback provided.
+## Disclaimers
 
-## Disclaimers and Limitations of Liability
+THE APP IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. TO THE MAXIMUM EXTENT PERMITTED BY LAW, WE DISCLAIM ALL WARRANTIES INCLUDING MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 
-### "As Is" Basis
+**For EU Users**: This does not affect your mandatory statutory rights.
 
-TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE APP IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR UNINTERRUPTED OPERATION.
+---
 
-### Limitation of Liability
+## Limitation of Liability
 
-TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, WE SHALL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOSS OF DATA, ARISING FROM YOUR USE OR INABILITY TO USE THE APP.
+TO THE EXTENT PERMITTED BY LAW, WE SHALL NOT BE LIABLE FOR INDIRECT, INCIDENTAL, OR CONSEQUENTIAL DAMAGES ARISING FROM YOUR USE OF THE APP. OUR TOTAL LIABILITY SHALL NOT EXCEED THE GREATER OF THE AMOUNT YOU PAID US IN THE PRIOR 12 MONTHS OR €100.
 
-**For EU Users**: This limitation does not apply to death or personal injury caused by our negligence, fraud, or any liability that cannot be excluded under EU consumer protection law.
+We recommend regularly exporting your trip data. We are not responsible for data loss.
 
-**Maximum Liability**: To the extent permitted by law, our total liability shall not exceed the greater of: (a) the amount you paid us in the 12 months before the claim, or (b) €100.
+---
 
-### Data Loss
+## Changes
 
-We strongly recommend regularly exporting your data using the built-in PDF, CSV, or JSON export features. We are not responsible for data loss from any cause.
+We may update the App or these Terms at any time. We will notify you of material changes. Continued use after changes constitutes acceptance. EU users will receive 30 days' notice for material changes.
 
-## Changes to the App and Terms
+---
 
-We reserve the right to modify, update, or discontinue the App or these Terms at any time. We will notify you of material changes through the App. Continued use after changes constitutes acceptance. EU users will receive 30 days' notice for material changes.
+## Governing Law
 
-## Termination
+These Terms are governed by the laws of Poland and applicable EU regulations. EU consumers may bring proceedings in their country of residence. Non-EU users submit to the jurisdiction of courts in Warsaw, Poland.
 
-You may stop using the App at any time by deleting it from your device and cancelling any active subscriptions. We may terminate your access if you violate these Terms. Upon termination, your license ends immediately.
+---
 
-## Dispute Resolution
+## Contact
 
-### Governing Law
-
-These Terms are governed by the laws of Poland and applicable EU regulations. EU consumer protection law prevails in case of conflict.
-
-### Jurisdiction
-
-EU users may bring proceedings in their country of residence or in Poland. Non-EU users submit to the exclusive jurisdiction of courts in Warsaw, Poland.
-
-### EU Online Dispute Resolution
-
-EU consumers may use the European Commission's ODR platform:  
-**https://ec.europa.eu/consumers/odr**
-
-## Third-Party Services
-
-The App is distributed through Apple's App Store. Apple is a third-party beneficiary of these Terms. These Terms are between you and us, not Apple. Apple has no obligation to provide support for the App.
-
-## Contact Us
-
-**Developer**: Dawid (Osanuo)  
-**Location**: Warsaw, Poland  
-**Email**: osanuo.studio@gmail.com  
-**GitHub**: https://github.com/osanuo  
-**Website**: https://osanuo.github.io/Protagonist.app/
-
-We will respond to inquiries within 30 days.
+**Developer**: Dawid (Osanuo)
+**Location**: Warsaw, Poland
+**Email**: osanuo.studio@gmail.com
+**GitHub**: https://github.com/osanuo
+**Website**: https://osanuo.github.io/Atlas.app/
 
 ---
 
@@ -242,17 +184,15 @@ We will respond to inquiries within 30 days.
 
 **In Plain English:**
 
-- ✅ Use Protagonist to journal your life as episodes and seasons (16+ in EU, 13+ elsewhere)
-- ✅ You own all your episodes and data
-- ✅ Director's Cut subscriptions renew automatically unless cancelled
-- ✅ Lifetime purchase gives permanent access to premium features
-- ✅ EU users have 14-day withdrawal rights (with conditions)
-- ✅ The App is provided "as is" — please export your data regularly
-- ✅ EU users have additional consumer protection rights
-- ✅ Contact us with any questions or concerns
+- ✅ Use Atlas to plan trips, track budgets, and collaborate with your crew (13+ or 16+ in EU)
+- ✅ You own all your trip data and content
+- ✅ Atlas Pro subscriptions renew automatically unless cancelled
+- ✅ Annual plan includes a 7-day free trial
+- ✅ EU users have 14-day withdrawal rights and additional consumer protections
+- ✅ All payments are processed by Apple — we never see your card details
 
-**By using Protagonist, you agree to these Terms. If you don't agree, please don't use the App.**
+**By using Atlas, you agree to these Terms.**
 
 ---
 
-*These Terms of Service are effective as of March 1, 2026 and comply with Polish law, EU regulations, and applicable consumer protection laws.*
+*These Terms of Service are effective as of March 24, 2026.*
